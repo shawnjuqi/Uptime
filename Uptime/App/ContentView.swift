@@ -15,6 +15,8 @@ struct ContentView: View {
     @State private var calendarViewModel = CalendarViewModel(viewContext: PersistenceController.shared.container.viewContext)
     @State private var selectedDestination: NavigationDestination? = .timer
     @AppStorage("showTestingMode") private var showTestingMode = false
+    
+    let menuBarService: MenuBarService
 
     var body: some View {
         NavigationSplitView {
@@ -70,9 +72,12 @@ struct ContentView: View {
                 selectedDestination = .timer
             }
         }
+        .onAppear {
+            menuBarService.setup(sessionViewModel: sessionViewModel)
+        }
     }
 }
 
 #Preview {
-    ContentView().environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    ContentView(menuBarService: MenuBarService()).environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }

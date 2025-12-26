@@ -4,10 +4,11 @@ import SwiftUI
 struct UptimeApp: App {
     let persistenceController = PersistenceController.shared
     @AppStorage("showTestingMode") private var showTestingMode = false
+    @State private var menuBarService = MenuBarService()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ContentView(menuBarService: menuBarService)
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
         .commands {
