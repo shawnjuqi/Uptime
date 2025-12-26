@@ -5,13 +5,10 @@ struct UptimeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     let persistenceController = PersistenceController.shared
     @AppStorage("showTestingMode") private var showTestingMode = false
-    @State private var menuBarService = MenuBarService()
-    // Store SessionViewModel at app level to persist across window lifecycle
-    @State private var sessionViewModel = SessionViewModel(viewContext: PersistenceController.shared.container.viewContext)
 
     var body: some Scene {
         WindowGroup {
-            ContentView(sessionViewModel: sessionViewModel, menuBarService: menuBarService)
+            ContentView(sessionViewModel: SessionViewModel.shared, menuBarService: MenuBarService.shared)
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
         .commands {

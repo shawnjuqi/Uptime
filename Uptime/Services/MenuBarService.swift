@@ -10,6 +10,9 @@ final class MenuBarTimerStorage: @unchecked Sendable {
 @MainActor
 @Observable
 final class MenuBarService {
+    // Singleton instance to prevent deallocation during app termination
+    static let shared = MenuBarService()
+    
     private var statusItem: NSStatusItem?
     private let timerStorage = MenuBarTimerStorage()
     weak var sessionViewModel: SessionViewModel?

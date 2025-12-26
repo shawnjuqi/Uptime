@@ -13,6 +13,9 @@ final class TimerStorage: @unchecked Sendable {
 @MainActor
 @Observable
 final class SessionViewModel {
+    // Singleton instance to prevent deallocation during app termination
+    static let shared = SessionViewModel(viewContext: PersistenceController.shared.container.viewContext)
+    
     var isRunning = false
     var elapsedTime: TimeInterval = 0
     var currentSession: WorkSession?

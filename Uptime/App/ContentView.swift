@@ -82,8 +82,3 @@ struct ContentView: View {
         }
     }
 }
-
-#Preview {
-    ContentView(sessionViewModel: SessionViewModel(viewContext: PersistenceController.preview.container.viewContext), menuBarService: MenuBarService())
-        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-}
