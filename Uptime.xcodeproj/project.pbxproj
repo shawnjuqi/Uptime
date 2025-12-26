@@ -6,14 +6,65 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		C8790AF52EFF29AF00EAC9EC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8790AF42EFF29AF00EAC9EC /* WidgetKit.framework */; };
+		C8790AF72EFF29AF00EAC9EC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C8790AF62EFF29AF00EAC9EC /* SwiftUI.framework */; };
+		C8790B032EFF29B000EAC9EC /* UptimeWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C8790AF22EFF29AF00EAC9EC /* UptimeWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C8790B012EFF29B000EAC9EC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C8790A492EFE3C5400EAC9EC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C8790AF12EFF29AF00EAC9EC;
+			remoteInfo = UptimeWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C8790B082EFF29B000EAC9EC /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C8790B032EFF29B000EAC9EC /* UptimeWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		C8790A512EFE3C5400EAC9EC /* Uptime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Uptime.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8790AF22EFF29AF00EAC9EC /* UptimeWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = UptimeWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C8790AF42EFF29AF00EAC9EC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		C8790AF62EFF29AF00EAC9EC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		C8790B042EFF29B000EAC9EC /* Exceptions for "UptimeWidget" folder in "UptimeWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = C8790AF12EFF29AF00EAC9EC /* UptimeWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C8790A532EFE3C5400EAC9EC /* Uptime */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Uptime;
+			sourceTree = "<group>";
+		};
+		C8790AF82EFF29AF00EAC9EC /* UptimeWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C8790B042EFF29B000EAC9EC /* Exceptions for "UptimeWidget" folder in "UptimeWidgetExtension" target */,
+			);
+			path = UptimeWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,6 +77,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C8790AEF2EFF29AF00EAC9EC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C8790AF72EFF29AF00EAC9EC /* SwiftUI.framework in Frameworks */,
+				C8790AF52EFF29AF00EAC9EC /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -33,6 +93,8 @@
 			isa = PBXGroup;
 			children = (
 				C8790A532EFE3C5400EAC9EC /* Uptime */,
+				C8790AF82EFF29AF00EAC9EC /* UptimeWidget */,
+				C8790AF32EFF29AF00EAC9EC /* Frameworks */,
 				C8790A522EFE3C5400EAC9EC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,8 +103,18 @@
 			isa = PBXGroup;
 			children = (
 				C8790A512EFE3C5400EAC9EC /* Uptime.app */,
+				C8790AF22EFF29AF00EAC9EC /* UptimeWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C8790AF32EFF29AF00EAC9EC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C8790AF42EFF29AF00EAC9EC /* WidgetKit.framework */,
+				C8790AF62EFF29AF00EAC9EC /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -55,10 +127,12 @@
 				C8790A4D2EFE3C5400EAC9EC /* Sources */,
 				C8790A4E2EFE3C5400EAC9EC /* Frameworks */,
 				C8790A4F2EFE3C5400EAC9EC /* Resources */,
+				C8790B082EFF29B000EAC9EC /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C8790B022EFF29B000EAC9EC /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				C8790A532EFE3C5400EAC9EC /* Uptime */,
@@ -69,6 +143,28 @@
 			productName = Uptime;
 			productReference = C8790A512EFE3C5400EAC9EC /* Uptime.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C8790AF12EFF29AF00EAC9EC /* UptimeWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C8790B052EFF29B000EAC9EC /* Build configuration list for PBXNativeTarget "UptimeWidgetExtension" */;
+			buildPhases = (
+				C8790AEE2EFF29AF00EAC9EC /* Sources */,
+				C8790AEF2EFF29AF00EAC9EC /* Frameworks */,
+				C8790AF02EFF29AF00EAC9EC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C8790AF82EFF29AF00EAC9EC /* UptimeWidget */,
+			);
+			name = UptimeWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = UptimeWidgetExtension;
+			productReference = C8790AF22EFF29AF00EAC9EC /* UptimeWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -81,6 +177,9 @@
 				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					C8790A502EFE3C5400EAC9EC = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					C8790AF12EFF29AF00EAC9EC = {
 						CreatedOnToolsVersion = 16.4;
 					};
 				};
@@ -100,12 +199,20 @@
 			projectRoot = "";
 			targets = (
 				C8790A502EFE3C5400EAC9EC /* Uptime */,
+				C8790AF12EFF29AF00EAC9EC /* UptimeWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		C8790A4F2EFE3C5400EAC9EC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C8790AF02EFF29AF00EAC9EC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +229,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C8790AEE2EFF29AF00EAC9EC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		C8790B022EFF29B000EAC9EC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C8790AF12EFF29AF00EAC9EC /* UptimeWidgetExtension */;
+			targetProxy = C8790B012EFF29B000EAC9EC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		C8790A602EFE3C5500EAC9EC /* Debug */ = {
@@ -299,6 +421,64 @@
 			};
 			name = Release;
 		};
+		C8790B062EFF29B000EAC9EC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = UptimeWidget/UptimeWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 386DZ89CD4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UptimeWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UptimeWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Oriented.Uptime.UptimeWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		C8790B072EFF29B000EAC9EC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = UptimeWidget/UptimeWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 386DZ89CD4;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = UptimeWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = UptimeWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = Oriented.Uptime.UptimeWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -316,6 +496,15 @@
 			buildConfigurations = (
 				C8790A632EFE3C5500EAC9EC /* Debug */,
 				C8790A642EFE3C5500EAC9EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C8790B052EFF29B000EAC9EC /* Build configuration list for PBXNativeTarget "UptimeWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C8790B062EFF29B000EAC9EC /* Debug */,
+				C8790B072EFF29B000EAC9EC /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
