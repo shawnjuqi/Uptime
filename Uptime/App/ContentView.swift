@@ -43,17 +43,6 @@ struct ContentView: View {
                     }
                     .help("Refresh widget data")
                 }
-                
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        SharedStorage.reset()
-                        WidgetHelper.reloadWidget()
-                        calendarViewModel.refresh()
-                    } label: {
-                        Label("Reset Widget Data", systemImage: "trash")
-                    }
-                    .help("Clear all widget data")
-                }
             }
         } detail: {
             Group {

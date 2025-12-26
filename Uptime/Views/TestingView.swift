@@ -56,6 +56,17 @@ struct TestingView: View {
                 }
             }
             
+            Section("Widget Management") {
+                Button {
+                    SharedStorage.reset()
+                    WidgetHelper.reloadWidget()
+                    calendarViewModel.refresh()
+                } label: {
+                    Label("Reset Widget Data", systemImage: "trash")
+                        .foregroundStyle(.red)
+                }
+            }
+            
             Section("Info") {
                 Text("Selected Date: \(selectedDate, format: .dateTime.month().day().year())")
                 Text("Test Duration: \(formatDuration(testDuration))")
