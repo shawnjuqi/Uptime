@@ -47,27 +47,28 @@ final class SessionViewModel {
         isTimerEnabled = true
     }
     
-    func setCustomDuration(hours: Int, minutes: Int) {
-        targetDuration = TimeInterval(hours * 3600 + minutes * 60)
+    func setCustomDuration(hours: Int, minutes: Int, seconds: Int = 0) {
+        targetDuration = TimeInterval(hours * 3600 + minutes * 60 + seconds)
         isTimerEnabled = true
     }
     
-    func disableTimer() {
+    func resetTimer() {
         isTimerEnabled = false
     }
     
     func startSession() {
         guard !isRunning else { return }
+        guard isTimerEnabled else { return } // Require timer to be set before starting
+        guard targetDuration >= 1.0 else { return } // Timer must be at least 1 second
         
         let startTime = Date()
         sessionStartTime = startTime
+        elapsedTime = Date().timeIntervalSince(startTime) // Initialize immediately to prevent skip
         currentSession = sessionService.createSession(startTime: startTime)
         isRunning = true
         
-        // Schedule notification if timer is enabled
-        if isTimerEnabled {
-            scheduleNotification()
-        }
+        // Schedule notification
+        scheduleNotification()
         
         timerStorage.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -100,6 +101,51 @@ final class SessionViewModel {
         sessionStartTime = nil
     }
     
+    func pauseSession() {
+        guard isRunning, let startTime = sessionStartTime else { return }
+        
+        // Update elapsed time one final time for accuracy
+        elapsedTime = Date().timeIntervalSince(startTime)
+        
+        // Stop the timer and cancel notification, but keep state
+        timerStorage.timer?.invalidate()
+        timerStorage.timer = nil
+        cancelNotification()
+        isRunning = false
+        // Keep elapsedTime, currentSession, and sessionStartTime for resuming
+    }
+    
+    func resumeSession() {
+        guard !isRunning else { return }
+        guard currentSession != nil, sessionStartTime != nil else { return }
+        guard isTimerEnabled else { return }
+        
+        // Adjust sessionStartTime to account for elapsed time
+        // This makes the timer continue from where it paused
+        sessionStartTime = Date() - elapsedTime
+        
+        isRunning = true
+        
+        // Reschedule notification with remaining time
+        let remainingTime = max(0, targetDuration - elapsedTime)
+        if remainingTime > 0 {
+            scheduleNotificationWithTimeInterval(remainingTime)
+        }
+        
+        // Restart the timer
+        timerStorage.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                guard let self = self, let startTime = self.sessionStartTime else { return }
+                self.elapsedTime = Date().timeIntervalSince(startTime)
+                
+                // Check if timer completed
+                if self.isTimerComplete {
+                    self.onTimerComplete()
+                }
+            }
+        }
+    }
+    
     private func updateSharedStorage() {
         let today = Date()
         let todayDuration = sessionService.getTotalDuration(for: today)
@@ -129,14 +175,6 @@ final class SessionViewModel {
         WidgetCenter.shared.reloadTimelines(ofKind: "UptimeWidget")
     }
     
-    func pauseSession() {
-        stopSession()
-    }
-    
-    func resumeSession() {
-        startSession()
-    }
-    
     private func onTimerComplete() {
         // Timer completed - could add haptic feedback or sound here
         NSSound.beep()
@@ -147,12 +185,18 @@ final class SessionViewModel {
     }
     
     private func scheduleNotification() {
+        scheduleNotificationWithTimeInterval(targetDuration)
+    }
+    
+    private func scheduleNotificationWithTimeInterval(_ timeInterval: TimeInterval) {
+        guard timeInterval > 0 else { return }
+        
         let content = UNMutableNotificationContent()
         content.title = "Timer Complete"
         content.body = "Your work session timer has finished!"
         content.sound = .default
         
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: targetDuration, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInterval, repeats: false)
         let request = UNNotificationRequest(identifier: "sessionTimer", content: content, trigger: trigger)
         
         UNUserNotificationCenter.current().add(request)

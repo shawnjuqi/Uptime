@@ -2,63 +2,135 @@ import SwiftUI
 
 struct SessionView: View {
     let viewModel: SessionViewModel
-    @State private var showTimerSettings = false
-    @State private var customHours = 1
-    @State private var customMinutes = 0
     
     var body: some View {
         VStack {
             TimerDisplayView(viewModel: viewModel)
             
-            if !viewModel.isRunning {
-                TimerSettingsView(
-                    viewModel: viewModel,
-                    showCustomTimer: $showTimerSettings
-                )
-            }
-            
             SessionControlsView(viewModel: viewModel)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .sheet(isPresented: $showTimerSettings) {
-            CustomTimerView(
-                hours: $customHours,
-                minutes: $customMinutes,
-                onSave: {
-                    viewModel.setCustomDuration(hours: customHours, minutes: customMinutes)
-                    showTimerSettings = false
-                },
-                onCancel: {
-                    showTimerSettings = false
-                }
-            )
-        }
     }
 }
 
 struct TimerDisplayView: View {
-    let viewModel: SessionViewModel
+    @Bindable var viewModel: SessionViewModel
+    @State private var hoursString = "00"
+    @State private var minutesString = "00"
+    @State private var secondsString = "00"
+    @FocusState private var focusedField: TimeField?
+    
+    enum TimeField {
+        case hours, minutes, seconds
+    }
+    
+    private var isPaused: Bool {
+        viewModel.currentSession != nil && !viewModel.isRunning
+    }
     
     var body: some View {
         VStack(spacing: 16) {
-            Text("Work Session")
-                .font(.title2)
-                .foregroundStyle(.secondary)
-            
-            Text(formatTime(viewModel.elapsedTime))
-                .font(.system(size: 64, design: .monospaced))
-                .bold()
-                .foregroundStyle(viewModel.isTimerComplete ? .green : .primary)
-            
-            if viewModel.isTimerEnabled && viewModel.isRunning {
-                TimerProgressView(viewModel: viewModel)
-            } else if viewModel.isTimerEnabled && !viewModel.isRunning {
-                Text("Target: \(formatTime(viewModel.targetDuration))")
-                    .font(.title3)
+            if viewModel.isRunning {
+                // Show remaining time counting down when running
+                Text(formatTime(viewModel.remainingTime > 0 ? viewModel.remainingTime : 0))
+                    .font(.system(size: 64, design: .monospaced))
+                    .bold()
+                    .foregroundStyle(viewModel.isTimerComplete ? .green : .primary)
+            } else if isPaused {
+                // Show paused time when paused
+                Text(formatTime(viewModel.remainingTime > 0 ? viewModel.remainingTime : 0))
+                    .font(.system(size: 64, design: .monospaced))
+                    .bold()
                     .foregroundStyle(.secondary)
+            } else {
+                // Always show editable time fields when not running
+                HStack(spacing: 4) {
+                    TimeFieldView(
+                        text: $hoursString,
+                        maxValue: 99,
+                        focusedField: $focusedField,
+                        field: .hours
+                    )
+                    
+                    Text(":")
+                        .font(.system(size: 64, design: .monospaced))
+                        .bold()
+                    
+                    TimeFieldView(
+                        text: $minutesString,
+                        maxValue: 59,
+                        focusedField: $focusedField,
+                        field: .minutes
+                    )
+                    
+                    Text(":")
+                        .font(.system(size: 64, design: .monospaced))
+                        .bold()
+                    
+                    TimeFieldView(
+                        text: $secondsString,
+                        maxValue: 59,
+                        focusedField: $focusedField,
+                        field: .seconds
+                    )
+                }
+                .onChange(of: hoursString) { oldValue, newValue in
+                    applyTime()
+                }
+                .onChange(of: minutesString) { oldValue, newValue in
+                    applyTime()
+                }
+                .onChange(of: secondsString) { oldValue, newValue in
+                    applyTime()
+                }
+            }
+            
+            if viewModel.isTimerEnabled && (viewModel.isRunning || isPaused) {
+                VStack(spacing: 8) {
+                    ProgressView(value: viewModel.progress)
+                        .frame(width: 200)
+                    
+                    if viewModel.isTimerComplete {
+                        Text("Timer Complete!")
+                            .font(.headline)
+                            .foregroundStyle(.green)
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity)
+        .onChange(of: viewModel.isRunning) { oldValue, newValue in
+            if newValue {
+                focusedField = nil
+            } else {
+                // When timer stops, update fields from the actual duration
+                updateFieldsFromDuration(viewModel.targetDuration)
+            }
+        }
+        .onAppear {
+            updateFieldsFromDuration(viewModel.targetDuration)
+        }
+    }
+    
+    private func updateFieldsFromDuration(_ duration: TimeInterval) {
+        let totalSeconds = Int(duration)
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        hoursString = String(format: "%02d", hours)
+        minutesString = String(format: "%02d", minutes)
+        secondsString = String(format: "%02d", seconds)
+    }
+    
+    private func applyTime() {
+        let hours = Int(hoursString) ?? 0
+        let minutes = Int(minutesString) ?? 0
+        let seconds = Int(secondsString) ?? 0
+        let totalSeconds = hours * 3600 + minutes * 60 + seconds
+        if totalSeconds > 0 {
+            viewModel.setCustomDuration(hours: hours, minutes: minutes, seconds: seconds)
+            viewModel.isTimerEnabled = true
+        }
     }
     
     private func formatTime(_ timeInterval: TimeInterval) -> String {
@@ -70,6 +142,60 @@ struct TimerDisplayView: View {
         let minutesString = minutes < 10 ? "0\(minutes)" : "\(minutes)"
         let secondsString = seconds < 10 ? "0\(seconds)" : "\(seconds)"
         return "\(hoursString):\(minutesString):\(secondsString)"
+    }
+}
+
+struct TimeFieldView: View {
+    @Binding var text: String
+    let maxValue: Int
+    let focusedField: FocusState<TimerDisplayView.TimeField?>.Binding
+    let field: TimerDisplayView.TimeField
+    
+    @State private var inputBuffer = ""
+    
+    var body: some View {
+        TextField("00", text: $text)
+            .font(.system(size: 64, design: .monospaced))
+            .bold()
+            .multilineTextAlignment(.center)
+            .frame(width: 80, height: 80)
+            .focused(focusedField, equals: field)
+            .textFieldStyle(.plain)
+            .background(Color.clear)
+            .onChange(of: text) { oldValue, newValue in
+                handleInput(newValue)
+            }
+            .onChange(of: focusedField.wrappedValue) { oldValue, newValue in
+                if newValue == field {
+                    // When field gains focus, reset to "00" and clear buffer
+                    text = "00"
+                    inputBuffer = ""
+                }
+            }
+    }
+    
+    private func handleInput(_ newValue: String) {
+        // Extract only digits
+        let digits = newValue.filter { $0.isNumber }
+        
+        if digits.isEmpty {
+            text = "00"
+            inputBuffer = ""
+            return
+        }
+        
+        // Right-to-left input: new digits go to the right, old digits shift left
+        // Take last 2 digits (rightmost digits)
+        let lastTwo = String(digits.suffix(2))
+        inputBuffer = lastTwo
+        
+        if let intValue = Int(lastTwo) {
+            // Clamp to max value
+            let clamped = min(intValue, maxValue)
+            text = String(format: "%02d", clamped)
+        } else {
+            text = "00"
+        }
     }
 }
 
@@ -105,87 +231,54 @@ struct TimerProgressView: View {
     }
 }
 
-struct TimerSettingsView: View {
-    let viewModel: SessionViewModel
-    @Binding var showCustomTimer: Bool
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            Text("Set Timer")
-                .font(.headline)
-            
-            HStack(spacing: 12) {
-                PresetButton(title: "30m", minutes: 30, viewModel: viewModel)
-                PresetButton(title: "1h", minutes: 60, viewModel: viewModel)
-                PresetButton(title: "2h", minutes: 120, viewModel: viewModel)
-                PresetButton(title: "Custom", minutes: nil, viewModel: viewModel) {
-                    showCustomTimer = true
-                }
-            }
-            
-            if viewModel.isTimerEnabled {
-                Button("Disable Timer", action: viewModel.disableTimer)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding()
-        .background(.regularMaterial)
-        .clipShape(.rect(cornerRadius: 12))
-    }
-}
-
-struct PresetButton: View {
-    let title: String
-    let minutes: Int?
-    let viewModel: SessionViewModel
-    var action: (() -> Void)?
-    
-    init(title: String, minutes: Int?, viewModel: SessionViewModel, action: (() -> Void)? = nil) {
-        self.title = title
-        self.minutes = minutes
-        self.viewModel = viewModel
-        self.action = action
-    }
-    
-    private var isSelected: Bool {
-        guard viewModel.isTimerEnabled else { return false }
-        
-        if let minutes = minutes {
-            let presetDuration = TimeInterval(minutes * 60)
-            return abs(viewModel.targetDuration - presetDuration) < 0.1
-        } else {
-            let presetDurations: [TimeInterval] = [30 * 60, 60 * 60, 120 * 60]
-            let matchesPreset = presetDurations.contains { abs(viewModel.targetDuration - $0) < 0.1 }
-            return !matchesPreset
-        }
-    }
-    
-    var body: some View {
-        Button {
-            if let minutes = minutes {
-                viewModel.setPresetDuration(minutes)
-            } else {
-                action?()
-            }
-        } label: {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .frame(width: 60, height: 32)
-                .background(isSelected ? Color.blue : Color.black)
-                .foregroundStyle(isSelected ? .white : .white)
-                .clipShape(.rect(cornerRadius: 8))
-        }
-        .buttonStyle(.plain)
-    }
-}
 
 struct SessionControlsView: View {
     let viewModel: SessionViewModel
     
+    private var isPaused: Bool {
+        viewModel.currentSession != nil && !viewModel.isRunning
+    }
+    
     var body: some View {
         HStack(spacing: 20) {
             if viewModel.isRunning {
+                // Show Pause button when running
+                Button {
+                    viewModel.pauseSession()
+                } label: {
+                    Label("Pause", systemImage: "pause.fill")
+                        .frame(width: 120, height: 50)
+                        .background(Color.orange)
+                        .foregroundStyle(.white)
+                        .clipShape(.rect(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                
+                // Show Stop button to end session
+                Button {
+                    viewModel.stopSession()
+                } label: {
+                    Label("Stop", systemImage: "stop.fill")
+                        .frame(width: 120, height: 50)
+                        .background(Color.red)
+                        .foregroundStyle(.white)
+                        .clipShape(.rect(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+            } else if isPaused {
+                // Show Resume button when paused
+                Button {
+                    viewModel.resumeSession()
+                } label: {
+                    Label("Resume", systemImage: "play.fill")
+                        .frame(width: 120, height: 50)
+                        .background(Color.green)
+                        .foregroundStyle(.white)
+                        .clipShape(.rect(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                
+                // Show Stop button to end session
                 Button {
                     viewModel.stopSession()
                 } label: {
@@ -197,67 +290,20 @@ struct SessionControlsView: View {
                 }
                 .buttonStyle(.plain)
             } else {
+                // Show Start button when not running and not paused
                 Button {
                     viewModel.startSession()
                 } label: {
                     Label("Start", systemImage: "play.fill")
                         .frame(width: 120, height: 50)
-                        .background(Color.green)
+                        .background(viewModel.isTimerEnabled ? Color.green : Color.gray)
                         .foregroundStyle(.white)
                         .clipShape(.rect(cornerRadius: 10))
                 }
                 .buttonStyle(.plain)
+                .disabled(!viewModel.isTimerEnabled)
             }
         }
     }
 }
 
-struct CustomTimerView: View {
-    @Binding var hours: Int
-    @Binding var minutes: Int
-    let onSave: () -> Void
-    let onCancel: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            Text("Custom Timer")
-                .font(.title2)
-                .bold()
-            
-            HStack(spacing: 30) {
-                VStack(spacing: 8) {
-                    Text("Hours")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Stepper(value: $hours, in: 0...23) {
-                        Text("\(hours)")
-                            .font(.title3)
-                            .frame(width: 50)
-                    }
-                }
-                
-                VStack(spacing: 8) {
-                    Text("Minutes")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Stepper(value: $minutes, in: 0...59) {
-                        Text("\(minutes)")
-                            .font(.title3)
-                            .frame(width: 50)
-                    }
-                }
-            }
-            .padding()
-            
-            HStack(spacing: 16) {
-                Button("Cancel", action: onCancel)
-                    .buttonStyle(.bordered)
-                
-                Button("Set Timer", action: onSave)
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-        .padding(40)
-        .frame(width: 300)
-    }
-}

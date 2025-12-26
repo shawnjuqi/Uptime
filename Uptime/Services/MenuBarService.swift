@@ -51,7 +51,7 @@ final class MenuBarService {
               let sessionViewModel = sessionViewModel else { return }
         
         if sessionViewModel.isRunning {
-            let timeString = formatTime(sessionViewModel.elapsedTime)
+            let timeString = formatTime(sessionViewModel.remainingTime)
             // Use timer symbol with time text
             let image = NSImage(systemSymbolName: "timer", accessibilityDescription: "Timer running")
             image?.isTemplate = true

@@ -11,12 +11,17 @@ enum NavigationDestination: Hashable {
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     
-    @State private var sessionViewModel = SessionViewModel(viewContext: PersistenceController.shared.container.viewContext)
+    let sessionViewModel: SessionViewModel
     @State private var calendarViewModel = CalendarViewModel(viewContext: PersistenceController.shared.container.viewContext)
     @State private var selectedDestination: NavigationDestination? = .timer
     @AppStorage("showTestingMode") private var showTestingMode = false
     
     let menuBarService: MenuBarService
+    
+    init(sessionViewModel: SessionViewModel, menuBarService: MenuBarService) {
+        self.sessionViewModel = sessionViewModel
+        self.menuBarService = menuBarService
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -79,5 +84,6 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(menuBarService: MenuBarService()).environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
+    ContentView(sessionViewModel: SessionViewModel(viewContext: PersistenceController.preview.container.viewContext), menuBarService: MenuBarService())
+        .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }
