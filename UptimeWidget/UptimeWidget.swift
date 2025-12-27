@@ -9,31 +9,29 @@ struct UptimeWidget: Widget {
             UptimeWidgetEntryView(entry: entry)
         }
         .configurationDisplayName("Uptime")
-        .description("Display your work calendar")
+        .description("Track your work activity")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
 struct UptimeTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> UptimeEntry {
-        // Placeholder shows sample data for preview (doesn't affect real snapshot)
+        // Generate sample work days for placeholder
         let calendar = Calendar.current
         let today = Date()
-        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: today)) else {
-            return UptimeEntry(date: today, currentMonth: today, workDays: Set<Date>())
+        var sampleWorkDays = Set<Date>()
+        
+        // Create a realistic pattern of work days
+        for daysAgo in 0..<120 {
+            if let date = calendar.date(byAdding: .day, value: -daysAgo, to: today) {
+                // Random-ish pattern based on day number
+                if daysAgo % 3 == 0 || daysAgo % 7 == 1 || daysAgo % 5 == 2 {
+                    sampleWorkDays.insert(calendar.startOfDay(for: date))
+                }
+            }
         }
         
-        // Show sample work days (days 3, 5, 7, 10, 12, 15, 18, 20, 22, 25)
-        let sampleDays = [3, 5, 7, 10, 12, 15, 18, 20, 22, 25]
-        let workDays = sampleDays.compactMap { day in
-            calendar.date(byAdding: .day, value: day - 1, to: startOfMonth)
-        }
-        
-        return UptimeEntry(
-            date: today,
-            currentMonth: today,
-            workDays: Set(workDays.map { calendar.startOfDay(for: $0) })
-        )
+        return UptimeEntry(date: today, workDays: sampleWorkDays)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (UptimeEntry) -> Void) {
@@ -42,7 +40,6 @@ struct UptimeTimelineProvider: TimelineProvider {
         let workDays = SharedStorage.getWorkDays()
         let entry = UptimeEntry(
             date: today,
-            currentMonth: today,
             workDays: Set(workDays.map { calendar.startOfDay(for: $0) })
         )
         completion(entry)
@@ -54,12 +51,11 @@ struct UptimeTimelineProvider: TimelineProvider {
         let workDays = SharedStorage.getWorkDays()
         let entry = UptimeEntry(
             date: currentDate,
-            currentMonth: currentDate,
             workDays: Set(workDays.map { calendar.startOfDay(for: $0) })
         )
         
         // Refresh every hour
-        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: currentDate) ?? currentDate.addingTimeInterval(3600)
+        let nextUpdate = calendar.date(byAdding: .hour, value: 1, to: currentDate) ?? currentDate.addingTimeInterval(3600)
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
     }
@@ -67,39 +63,57 @@ struct UptimeTimelineProvider: TimelineProvider {
 
 struct UptimeEntry: TimelineEntry {
     let date: Date
-    let currentMonth: Date
     let workDays: Set<Date>
 }
 
 struct UptimeWidgetEntryView: View {
     var entry: UptimeTimelineProvider.Entry
-    private let calendar = Calendar.current
+    @Environment(\.widgetFamily) var widgetFamily
     
     var body: some View {
-        CalendarGridView(
-            month: entry.currentMonth,
-            workDays: entry.workDays
+        ContributionGridView(
+            currentDate: entry.date,
+            workDays: entry.workDays,
+            widgetFamily: widgetFamily
         )
-        .padding(4)
-        .containerBackground(.fill.tertiary, for: .widget)
+        .containerBackground(Color.black, for: .widget)
     }
 }
 
-struct CalendarGridView: View {
-    let month: Date
+struct ContributionGridView: View {
+    let currentDate: Date
     let workDays: Set<Date>
+    let widgetFamily: WidgetFamily
     private let calendar = Calendar.current
+    
+    // Number of rows (days of week)
+    private let rows = 7
+    
+    // Columns based on widget size
+    private var columns: Int {
+        switch widgetFamily {
+        case .systemSmall:
+            return 7
+        case .systemMedium:
+            return 16
+        case .systemLarge:
+            return 16
+        case .systemExtraLarge:
+            return 24
+        case .accessoryCircular, .accessoryRectangular, .accessoryInline:
+            return 7
+        @unknown default:
+            return 14
+        }
+    }
     
     var body: some View {
         GeometryReader { geometry in
             let availableWidth = geometry.size.width
             let availableHeight = geometry.size.height
-            let dayCount = daysInMonth.count
-            let columns = 7
-            let rows = Int(ceil(Double(dayCount) / Double(columns)))
             
-            // Calculate spacing and square size to fill space
-            let spacing: CGFloat = 4
+            // Calculate spacing and square size
+            let spacing: CGFloat = 3
             let totalSpacingWidth = spacing * CGFloat(columns - 1)
             let totalSpacingHeight = spacing * CGFloat(rows - 1)
             
@@ -108,81 +122,108 @@ struct CalendarGridView: View {
             let squareSizeByHeight = (availableHeight - totalSpacingHeight) / CGFloat(rows)
             let squareSize = min(squareSizeByWidth, squareSizeByHeight)
             
-            // Center the grid if needed
+            // Center the grid
             let usedWidth = (squareSize * CGFloat(columns)) + totalSpacingWidth
             let usedHeight = (squareSize * CGFloat(rows)) + totalSpacingHeight
             let offsetX = (availableWidth - usedWidth) / 2
             let offsetY = (availableHeight - usedHeight) / 2
             
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.fixed(squareSize), spacing: spacing), count: columns),
-                spacing: spacing
-            ) {
-                ForEach(daysInMonth, id: \.self) { date in
-                    DaySquare(
-                        date: date,
-                        isWorkDay: workDays.contains(calendar.startOfDay(for: date)),
-                        isCurrentMonth: true,
-                        size: squareSize
-                    )
+            // Build the grid - columns are weeks, rows are days of week
+            HStack(spacing: spacing) {
+                ForEach(0..<columns, id: \.self) { columnIndex in
+                    VStack(spacing: spacing) {
+                        ForEach(0..<rows, id: \.self) { rowIndex in
+                            let date = dateFor(column: columnIndex, row: rowIndex)
+                            ContributionSquare(
+                                isWorkDay: date != nil && workDays.contains(calendar.startOfDay(for: date!)),
+                                isToday: date != nil && calendar.isDateInToday(date!),
+                                isFutureDate: date != nil && date! > currentDate,
+                                size: squareSize
+                            )
+                        }
+                    }
                 }
             }
             .frame(width: usedWidth, height: usedHeight)
             .offset(x: offsetX, y: offsetY)
         }
+        .padding(2)
     }
     
-    private var daysInMonth: [Date] {
-        guard let firstDay = calendar.date(from: calendar.dateComponents([.year, .month], from: month)) else {
-            return []
-        }
+    // Calculate date for a given grid position
+    // Grid fills from right to left, with today being in the rightmost column
+    private func dateFor(column: Int, row: Int) -> Date? {
+        // Get today's weekday (1 = Sunday, 7 = Saturday in default calendar)
+        let todayWeekday = calendar.component(.weekday, from: currentDate)
         
-        var days: [Date] = []
+        // The rightmost column contains today
+        // Each column to the left is one week earlier
+        let weeksAgo = columns - 1 - column
         
-        // Add all days of current month only (no padding days)
-        var currentDate = firstDay
-        while calendar.isDate(currentDate, equalTo: month, toGranularity: .month) {
-            days.append(currentDate)
-            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
-            currentDate = nextDate
-        }
+        // Row represents day of week (0 = Sunday, 6 = Saturday)
+        let targetWeekday = row + 1 // Convert to calendar weekday (1-7)
         
-        return days
+        // Calculate days from today
+        let daysDifference = (todayWeekday - targetWeekday) + (weeksAgo * 7)
+        
+        return calendar.date(byAdding: .day, value: -daysDifference, to: currentDate)
     }
 }
 
-struct DaySquare: View {
-    let date: Date
+struct ContributionSquare: View {
     let isWorkDay: Bool
-    let isCurrentMonth: Bool
+    let isToday: Bool
+    let isFutureDate: Bool
     let size: CGFloat
     
     var body: some View {
-        Rectangle()
-            .fill(isWorkDay ? Color.green.opacity(0.7) : (isCurrentMonth ? Color.gray.opacity(0.2) : Color.gray.opacity(0.1)))
+        RoundedRectangle(cornerRadius: size * 0.2)
+            .fill(squareColor)
             .frame(width: size, height: size)
-            .clipShape(.rect(cornerRadius: 0.5))
+            .overlay {
+                if isToday {
+                    RoundedRectangle(cornerRadius: size * 0.2)
+                        .stroke(Color.green.opacity(0.8), lineWidth: 1.5)
+                }
+            }
+    }
+    
+    private var squareColor: Color {
+        if isFutureDate {
+            return Color(white: 0.15)
+        } else if isWorkDay {
+            // Green with good visibility
+            return Color(red: 0.2, green: 0.7, blue: 0.3)
+        } else {
+            // Dark gray for empty days
+            return Color(white: 0.2)
+        }
     }
 }
 
-extension Calendar {
-    func startOfMonth(for date: Date) -> Date? {
-        return self.date(from: self.dateComponents([.year, .month], from: date))
-    }
+// Helper to generate sample work days for previews
+private func sampleWorkDays(daysAgoList: [Int]) -> Set<Date> {
+    let calendar = Calendar.current
+    let today = Date()
+    return Set(daysAgoList.compactMap { daysAgo in
+        calendar.date(byAdding: .day, value: -daysAgo, to: today).map { calendar.startOfDay(for: $0) }
+    })
 }
 
 #Preview(as: .systemSmall) {
     UptimeWidget()
 } timeline: {
-    let calendar = Calendar.current
-    let today = Date()
-    // Preview with some sample work days (not including today)
-    let workDays = [3, 5, 7, 10, 12, 14, 17, 19, 21].compactMap { day in
-        calendar.date(byAdding: .day, value: day - calendar.component(.day, from: today), to: today)
-    }
     UptimeEntry(
-        date: today,
-        currentMonth: today,
-        workDays: Set(workDays.map { calendar.startOfDay(for: $0) })
+        date: Date(),
+        workDays: sampleWorkDays(daysAgoList: [0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19, 21, 23, 25, 28, 30, 32, 35, 38, 40, 42])
+    )
+}
+
+#Preview(as: .systemMedium) {
+    UptimeWidget()
+} timeline: {
+    UptimeEntry(
+        date: Date(),
+        workDays: sampleWorkDays(daysAgoList: [0, 1, 3, 4, 6, 8, 9, 11, 13, 15, 16, 18, 20, 22, 24, 26, 28, 30, 33, 35, 38, 40, 43, 45, 48, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100])
     )
 }
