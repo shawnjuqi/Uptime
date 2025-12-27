@@ -28,29 +28,37 @@ struct ContentView: View {
             List(selection: $selectedDestination) {
                 NavigationLink(value: NavigationDestination.timer) {
                     Label("Timer", systemImage: "timer")
+                        .foregroundStyle(.white)
                 }
                 
                 NavigationLink(value: NavigationDestination.calendar) {
                     Label("Calendar", systemImage: "calendar")
+                        .foregroundStyle(.white)
                 }
                 
                 if showTestingMode {
                     NavigationLink(value: NavigationDestination.testing) {
                         Label("Testing", systemImage: "wrench.and.screwdriver")
+                            .foregroundStyle(.white)
                     }
                 }
             }
             .navigationTitle("Uptime")
+            .foregroundStyle(.white)
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button {
                         WidgetHelper.reloadWidget()
                     } label: {
                         Label("Refresh Widget", systemImage: "arrow.clockwise")
+                            .foregroundStyle(.white)
                     }
                     .help("Refresh widget data")
                 }
             }
+            .toolbarBackground(Color.black, for: .windowToolbar)
+            .scrollContentBackground(.hidden)
+            .background(Color.black)
         } detail: {
             Group {
                 switch selectedDestination {
@@ -64,6 +72,7 @@ struct ContentView: View {
                     SessionView(viewModel: sessionViewModel)
                 }
             }
+            .background(Color.black)
         }
         .onChange(of: sessionViewModel.isRunning) { oldValue, newValue in
             if !newValue {

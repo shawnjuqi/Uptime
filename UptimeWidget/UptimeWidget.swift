@@ -183,7 +183,7 @@ struct ContributionSquare: View {
             .overlay {
                 if isToday {
                     RoundedRectangle(cornerRadius: size * 0.2)
-                        .stroke(Color.green.opacity(0.8), lineWidth: 1.5)
+                        .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
                 }
             }
     }
@@ -192,11 +192,11 @@ struct ContributionSquare: View {
         if isFutureDate {
             return Color(white: 0.15)
         } else if isWorkDay {
-            // Green with good visibility
-            return Color(red: 0.2, green: 0.7, blue: 0.3)
+            // White for work days (Cursor style)
+            return Color.white
         } else {
             // Dark gray for empty days
-            return Color(white: 0.2)
+            return Color(white: 0.15)
         }
     }
 }

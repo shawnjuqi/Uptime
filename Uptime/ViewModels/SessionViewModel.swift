@@ -87,7 +87,8 @@ final class SessionViewModel {
     }
     
     func stopSession() {
-        guard isRunning, let session = currentSession, sessionStartTime != nil else { return }
+        // Allow stopping when running OR paused (both have a currentSession)
+        guard let session = currentSession, sessionStartTime != nil else { return }
         
         let endTime = Date()
         sessionService.endSession(session, endTime: endTime)

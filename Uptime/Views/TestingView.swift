@@ -16,19 +16,25 @@ struct TestingView: View {
     
     var body: some View {
         Form {
-            Section("Test Session Creation") {
+            Section {
                 DatePicker("Date", selection: $selectedDate, displayedComponents: [.date])
                     .datePickerStyle(.compact)
+                    .foregroundStyle(.white)
                 
                 HStack {
                     Text("Duration:")
+                        .foregroundStyle(.white)
                     Spacer()
                     Stepper(value: $testDurationHours, in: 0...23) {
                         Text("\(testDurationHours)h")
+                            .foregroundStyle(.white)
                     }
+                    .tint(.white)
                     Stepper(value: $testDurationMinutes, in: 0...59, step: 15) {
                         Text("\(testDurationMinutes)m")
+                            .foregroundStyle(.white)
                     }
+                    .tint(.white)
                 }
                 
                 Button {
@@ -36,43 +42,62 @@ struct TestingView: View {
                     calendarViewModel.refresh()
                 } label: {
                     Label("Create Test Session", systemImage: "plus.circle.fill")
+                        .foregroundStyle(.white)
                 }
                 .buttonStyle(.borderedProminent)
+                .tint(.white.opacity(0.2))
+            } header: {
+                Text("Test Session Creation")
+                    .foregroundStyle(.white)
             }
             
-            Section("Session Management") {
+            Section {
                 Button {
                     showDeleteConfirmation = true
                 } label: {
                     Label("Delete Sessions for Selected Date", systemImage: "trash")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(.white)
                 }
                 
                 Button {
                     showDeleteAllConfirmation = true
                 } label: {
                     Label("Delete All Sessions", systemImage: "trash.fill")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(.white)
                 }
+            } header: {
+                Text("Session Management")
+                    .foregroundStyle(.white)
             }
             
-            Section("Widget Management") {
+            Section {
                 Button {
                     SharedStorage.reset()
                     WidgetHelper.reloadWidget()
                     calendarViewModel.refresh()
                 } label: {
                     Label("Reset Widget Data", systemImage: "trash")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(.white)
                 }
+            } header: {
+                Text("Widget Management")
+                    .foregroundStyle(.white)
             }
             
-            Section("Info") {
+            Section {
                 Text("Selected Date: \(selectedDate, format: .dateTime.month().day().year())")
+                    .foregroundStyle(.white)
                 Text("Test Duration: \(formatDuration(testDuration))")
+                    .foregroundStyle(.white)
+            } header: {
+                Text("Info")
+                    .foregroundStyle(.white)
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .background(Color.black)
+        .foregroundStyle(.white)
         .navigationTitle("Testing Mode")
         .alert("Delete Sessions", isPresented: $showDeleteConfirmation) {
             Button("Cancel", role: .cancel) { }

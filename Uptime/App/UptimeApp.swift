@@ -10,6 +10,7 @@ struct UptimeApp: App {
         WindowGroup {
             ContentView(sessionViewModel: SessionViewModel.shared, menuBarService: MenuBarService.shared)
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
+                .background(Color.black)
         }
         .commands {
             CommandMenu("Test") {

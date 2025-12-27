@@ -22,6 +22,7 @@ struct CalendarView: View {
             )
         }
         .padding()
+        .background(Color.black)
         .onAppear {
             viewModel.refresh(for: currentYear)
         }
@@ -51,6 +52,7 @@ struct CalendarHeaderView: View {
             Text(currentYear, format: .dateTime.year())
                 .font(.title2)
                 .bold()
+                .foregroundStyle(.white)
             
             Spacer()
             
@@ -123,8 +125,9 @@ struct MonthCalendarView: View {
                 .font(.headline)
                 .frame(height: 20, alignment: .leading)
                 .padding(.horizontal, 4)
+                .foregroundStyle(.white)
             
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(12), spacing: 2), count: 7), spacing: 2) {
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(14), spacing: 3), count: 7), spacing: 3) {
                 ForEach(daysInMonth, id: \.self) { date in
                     DaySquare(
                         date: date,
@@ -164,26 +167,35 @@ struct DaySquare: View {
     let isCurrentMonth: Bool
     
     private let calendar = Calendar.current
+    private let size: CGFloat = 14
     
     var body: some View {
         ZStack {
-            Rectangle()
-                .fill(isWorkDay ? Color.green.opacity(0.7) : Color.gray.opacity(0.2))
-                .frame(width: 12, height: 12)
-                .clipShape(.rect(cornerRadius: 1))
+            RoundedRectangle(cornerRadius: size * 0.2)
+                .fill(squareColor)
+                .frame(width: size, height: size)
             
             if showDayNumber {
                 Text("\(calendar.component(.day, from: date))")
                     .font(.system(size: 7))
-                    .foregroundStyle(isWorkDay ? .white : .secondary)
+                    .foregroundStyle(isWorkDay ? .black : .white.opacity(0.5))
             }
             
             if isToday {
-                Rectangle()
-                    .stroke(Color.blue, lineWidth: 1)
-                    .frame(width: 12, height: 12)
-                    .clipShape(.rect(cornerRadius: 1))
+                RoundedRectangle(cornerRadius: size * 0.2)
+                    .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
+                    .frame(width: size, height: size)
             }
+        }
+    }
+    
+    private var squareColor: Color {
+        if isWorkDay {
+            // White for work days (Cursor style)
+            return Color.white
+        } else {
+            // Dark gray for empty days
+            return Color(white: 0.15)
         }
     }
     

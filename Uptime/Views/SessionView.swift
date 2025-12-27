@@ -10,6 +10,7 @@ struct SessionView: View {
             SessionControlsView(viewModel: viewModel)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
     }
 }
 
@@ -35,13 +36,13 @@ struct TimerDisplayView: View {
                 Text(formatTime(viewModel.remainingTime > 0 ? viewModel.remainingTime : 0))
                     .font(.system(size: 64, design: .monospaced))
                     .bold()
-                    .foregroundStyle(viewModel.isTimerComplete ? .green : .primary)
+                    .foregroundStyle(viewModel.isTimerComplete ? .white : .white)
             } else if isPaused {
                 // Show paused time when paused
                 Text(formatTime(viewModel.remainingTime > 0 ? viewModel.remainingTime : 0))
                     .font(.system(size: 64, design: .monospaced))
                     .bold()
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.6))
             } else {
                 // Always show editable time fields when not running
                 HStack(spacing: 4) {
@@ -55,6 +56,7 @@ struct TimerDisplayView: View {
                     Text(":")
                         .font(.system(size: 64, design: .monospaced))
                         .bold()
+                        .foregroundStyle(.white)
                     
                     TimeFieldView(
                         text: $minutesString,
@@ -66,6 +68,7 @@ struct TimerDisplayView: View {
                     Text(":")
                         .font(.system(size: 64, design: .monospaced))
                         .bold()
+                        .foregroundStyle(.white)
                     
                     TimeFieldView(
                         text: $secondsString,
@@ -86,15 +89,10 @@ struct TimerDisplayView: View {
             }
             
             if viewModel.isTimerEnabled && (viewModel.isRunning || isPaused) {
-                VStack(spacing: 8) {
-                    ProgressView(value: viewModel.progress)
-                        .frame(width: 200)
-                    
-                    if viewModel.isTimerComplete {
-                        Text("Timer Complete!")
-                            .font(.headline)
-                            .foregroundStyle(.green)
-                    }
+                if viewModel.isTimerComplete {
+                    Text("Timer Complete!")
+                        .font(.headline)
+                        .foregroundStyle(.white)
                 }
             }
         }
@@ -162,6 +160,7 @@ struct TimeFieldView: View {
             .focused(focusedField, equals: field)
             .textFieldStyle(.plain)
             .background(Color.clear)
+            .foregroundStyle(.white)
             .onChange(of: text) { oldValue, newValue in
                 handleInput(newValue)
             }
@@ -199,37 +198,6 @@ struct TimeFieldView: View {
     }
 }
 
-struct TimerProgressView: View {
-    let viewModel: SessionViewModel
-    
-    var body: some View {
-        VStack(spacing: 8) {
-            ProgressView(value: viewModel.progress)
-                .frame(width: 200)
-            
-            if viewModel.isTimerComplete {
-                Text("Timer Complete!")
-                    .font(.headline)
-                    .foregroundStyle(.green)
-            } else {
-                Text("Remaining: \(formatTime(viewModel.remainingTime))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-    
-    private func formatTime(_ timeInterval: TimeInterval) -> String {
-        let totalSeconds = Int(timeInterval)
-        let hours = totalSeconds / 3600
-        let minutes = (totalSeconds % 3600) / 60
-        let seconds = totalSeconds % 60
-        let hoursString = hours < 10 ? "0\(hours)" : "\(hours)"
-        let minutesString = minutes < 10 ? "0\(minutes)" : "\(minutes)"
-        let secondsString = seconds < 10 ? "0\(seconds)" : "\(seconds)"
-        return "\(hoursString):\(minutesString):\(secondsString)"
-    }
-}
 
 
 struct SessionControlsView: View {
@@ -248,9 +216,13 @@ struct SessionControlsView: View {
                 } label: {
                     Label("Pause", systemImage: "pause.fill")
                         .frame(width: 120, height: 50)
-                        .background(Color.orange)
+                        .background(Color.white.opacity(0.1))
                         .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 10))
+                        .clipShape(.rect(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
                 
@@ -260,9 +232,13 @@ struct SessionControlsView: View {
                 } label: {
                     Label("Stop", systemImage: "stop.fill")
                         .frame(width: 120, height: 50)
-                        .background(Color.red)
+                        .background(Color.white.opacity(0.1))
                         .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 10))
+                        .clipShape(.rect(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
             } else if isPaused {
@@ -272,9 +248,13 @@ struct SessionControlsView: View {
                 } label: {
                     Label("Resume", systemImage: "play.fill")
                         .frame(width: 120, height: 50)
-                        .background(Color.green)
+                        .background(Color.white.opacity(0.1))
                         .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 10))
+                        .clipShape(.rect(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
                 
@@ -284,9 +264,13 @@ struct SessionControlsView: View {
                 } label: {
                     Label("Stop", systemImage: "stop.fill")
                         .frame(width: 120, height: 50)
-                        .background(Color.red)
+                        .background(Color.white.opacity(0.1))
                         .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 10))
+                        .clipShape(.rect(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
             } else {
@@ -296,9 +280,13 @@ struct SessionControlsView: View {
                 } label: {
                     Label("Start", systemImage: "play.fill")
                         .frame(width: 120, height: 50)
-                        .background(viewModel.isTimerEnabled ? Color.green : Color.gray)
-                        .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 10))
+                        .background(viewModel.isTimerEnabled ? Color.white.opacity(0.15) : Color.white.opacity(0.05))
+                        .foregroundStyle(viewModel.isTimerEnabled ? .white : .white.opacity(0.4))
+                        .clipShape(.rect(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color.white.opacity(viewModel.isTimerEnabled ? 0.3 : 0.1), lineWidth: 1)
+                        )
                 }
                 .buttonStyle(.plain)
                 .disabled(!viewModel.isTimerEnabled)
