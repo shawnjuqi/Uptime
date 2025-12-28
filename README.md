@@ -2,6 +2,10 @@
 
 A macOS work session tracking app with timer functionality, calendar visualization, and widget support.
 
+<img width="630" height="421" alt="Screenshot 2025-12-28 at 3 13 43 PM" src="https://github.com/user-attachments/assets/cbdfb632-e966-4fe4-88c9-c511a753412a" />
+
+<img width="360" height="180" alt="Screenshot 2025-12-28 at 3 13 58 PM" src="https://github.com/user-attachments/assets/3cb2bf64-ce38-4df1-95f9-4cdd069432e7" />
+
 ## Features
 
 - Customizable countdown timer (hours:minutes:seconds)
