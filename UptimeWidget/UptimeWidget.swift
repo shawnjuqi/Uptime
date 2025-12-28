@@ -37,6 +37,7 @@ struct UptimeTimelineProvider: TimelineProvider {
     func getSnapshot(in context: Context, completion: @escaping (UptimeEntry) -> Void) {
         let today = Date()
         let calendar = Calendar.current
+        // Safely get work days with error handling
         let workDays = SharedStorage.getWorkDays()
         let entry = UptimeEntry(
             date: today,
@@ -48,13 +49,14 @@ struct UptimeTimelineProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<UptimeEntry>) -> Void) {
         let currentDate = Date()
         let calendar = Calendar.current
+        // Safely get work days with error handling
         let workDays = SharedStorage.getWorkDays()
         let entry = UptimeEntry(
             date: currentDate,
             workDays: Set(workDays.map { calendar.startOfDay(for: $0) })
         )
         
-        // Refresh every hour
+        // Refresh every hour with safe date calculation
         let nextUpdate = calendar.date(byAdding: .hour, value: 1, to: currentDate) ?? currentDate.addingTimeInterval(3600)
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
@@ -91,55 +93,73 @@ struct ContributionGridView: View {
     
     // Columns based on widget size
     private var columns: Int {
+        let cols: Int
         switch widgetFamily {
         case .systemSmall:
-            return 7
+            cols = 7
         case .systemMedium:
-            return 16
+            cols = 16
         case .systemLarge:
-            return 16
+            cols = 16
         case .systemExtraLarge:
-            return 24
+            cols = 24
         case .accessoryCircular, .accessoryRectangular, .accessoryInline:
-            return 7
+            cols = 7
         @unknown default:
-            return 14
+            cols = 14
         }
+        // Ensure columns is always positive
+        return max(cols, 1)
     }
     
     var body: some View {
         GeometryReader { geometry in
-            let availableWidth = geometry.size.width
-            let availableHeight = geometry.size.height
+            let availableWidth = max(geometry.size.width, 1)
+            let availableHeight = max(geometry.size.height, 1)
+            
+            // Ensure columns and rows are valid (columns already validated in computed property)
+            let validColumns = max(columns, 1)
+            let validRows = max(rows, 1)
             
             // Calculate spacing and square size
             let spacing: CGFloat = 3
-            let totalSpacingWidth = spacing * CGFloat(columns - 1)
-            let totalSpacingHeight = spacing * CGFloat(rows - 1)
+            let totalSpacingWidth = spacing * CGFloat(max(validColumns - 1, 0))
+            let totalSpacingHeight = spacing * CGFloat(max(validRows - 1, 0))
             
-            // Calculate square size to fill available space
-            let squareSizeByWidth = (availableWidth - totalSpacingWidth) / CGFloat(columns)
-            let squareSizeByHeight = (availableHeight - totalSpacingHeight) / CGFloat(rows)
-            let squareSize = min(squareSizeByWidth, squareSizeByHeight)
+            // Calculate square size to fill available space with division by zero protection
+            let squareSizeByWidth = max((availableWidth - totalSpacingWidth) / CGFloat(validColumns), 0)
+            let squareSizeByHeight = max((availableHeight - totalSpacingHeight) / CGFloat(validRows), 0)
+            let squareSize = max(min(squareSizeByWidth, squareSizeByHeight), 1)
             
             // Center the grid
-            let usedWidth = (squareSize * CGFloat(columns)) + totalSpacingWidth
-            let usedHeight = (squareSize * CGFloat(rows)) + totalSpacingHeight
+            let usedWidth = (squareSize * CGFloat(validColumns)) + totalSpacingWidth
+            let usedHeight = (squareSize * CGFloat(validRows)) + totalSpacingHeight
             let offsetX = (availableWidth - usedWidth) / 2
             let offsetY = (availableHeight - usedHeight) / 2
             
             // Build the grid - columns are weeks, rows are days of week
             HStack(spacing: spacing) {
-                ForEach(0..<columns, id: \.self) { columnIndex in
+                ForEach(0..<validColumns, id: \.self) { columnIndex in
                     VStack(spacing: spacing) {
-                        ForEach(0..<rows, id: \.self) { rowIndex in
+                        ForEach(0..<validRows, id: \.self) { rowIndex in
                             let date = dateFor(column: columnIndex, row: rowIndex)
-                            ContributionSquare(
-                                isWorkDay: date != nil && workDays.contains(calendar.startOfDay(for: date!)),
-                                isToday: date != nil && calendar.isDateInToday(date!),
-                                isFutureDate: date != nil && date! > currentDate,
-                                size: squareSize
-                            )
+                            // Use optional binding instead of force unwrap
+                            if let date = date {
+                                ContributionSquare(
+                                    isWorkDay: workDays.contains(calendar.startOfDay(for: date)),
+                                    isToday: calendar.isDateInToday(date),
+                                    isFutureDate: date > currentDate,
+                                    size: squareSize
+                                )
+                            } else {
+                                // Fallback for invalid dates
+                                ContributionSquare(
+                                    isWorkDay: false,
+                                    isToday: false,
+                                    isFutureDate: false,
+                                    size: squareSize
+                                )
+                            }
                         }
                     }
                 }
@@ -180,12 +200,6 @@ struct ContributionSquare: View {
         RoundedRectangle(cornerRadius: size * 0.2)
             .fill(squareColor)
             .frame(width: size, height: size)
-            .overlay {
-                if isToday {
-                    RoundedRectangle(cornerRadius: size * 0.2)
-                        .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
-                }
-            }
     }
     
     private var squareColor: Color {

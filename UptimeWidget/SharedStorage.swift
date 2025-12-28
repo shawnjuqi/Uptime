@@ -45,10 +45,20 @@ struct SharedStorage {
     }
     
     static func getWorkDays() -> [Date] {
-        guard let dateStrings = defaults?.stringArray(forKey: Keys.workDays) else {
+        // Safely access UserDefaults with error handling
+        guard let userDefaults = defaults else {
             return []
         }
-        return dateStrings.compactMap { dateFormatter.date(from: $0) }
+        
+        guard let dateStrings = userDefaults.stringArray(forKey: Keys.workDays) else {
+            return []
+        }
+        
+        // Safely parse dates, filtering out any invalid entries
+        return dateStrings.compactMap { dateString in
+            guard !dateString.isEmpty else { return nil }
+            return dateFormatter.date(from: dateString)
+        }
     }
     
     static func hasWorkToday() -> Bool {
