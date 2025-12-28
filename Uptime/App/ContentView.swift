@@ -5,6 +5,7 @@ import WidgetKit
 enum NavigationDestination: Hashable {
     case timer
     case calendar
+    case stats
     case testing
 }
 
@@ -33,6 +34,11 @@ struct ContentView: View {
                 
                 NavigationLink(value: NavigationDestination.calendar) {
                     Label("Calendar", systemImage: "calendar")
+                        .foregroundStyle(.white)
+                }
+                
+                NavigationLink(value: NavigationDestination.stats) {
+                    Label("Stats", systemImage: "chart.bar")
                         .foregroundStyle(.white)
                 }
                 
@@ -66,6 +72,8 @@ struct ContentView: View {
                     SessionView(viewModel: sessionViewModel)
                 case .calendar:
                     CalendarView(viewModel: calendarViewModel)
+                case .stats:
+                    StatsView(viewContext: viewContext)
                 case .testing:
                     TestingView(sessionViewModel: sessionViewModel, calendarViewModel: calendarViewModel)
                 case .none:

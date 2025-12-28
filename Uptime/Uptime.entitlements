@@ -10,5 +10,13 @@
 	</array>
 	<key>com.apple.security.files.user-selected.read-only</key>
 	<true/>
+	<key>com.apple.security.temporary-exception.user-preference-read</key>
+	<array>
+		<string>Oriented.Uptime</string>
+	</array>
+	<key>com.apple.security.temporary-exception.user-preference-write</key>
+	<array>
+		<string>Oriented.Uptime</string>
+	</array>
 </dict>
 </plist>

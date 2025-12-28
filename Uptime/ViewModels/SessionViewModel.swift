@@ -70,6 +70,9 @@ final class SessionViewModel {
         currentSession = sessionService.createSession(startTime: startTime)
         isRunning = true
         
+        // Notify MenuBarService of state change
+        MenuBarService.shared.onTimerUpdate()
+        
         // Schedule notification
         scheduleNotification()
         
@@ -77,6 +80,9 @@ final class SessionViewModel {
             Task { @MainActor in
                 guard let self = self, let startTime = self.sessionStartTime else { return }
                 self.elapsedTime = Date().timeIntervalSince(startTime)
+                
+                // Notify MenuBarService immediately for perfect synchronization
+                MenuBarService.shared.onTimerUpdate()
                 
                 // Check if timer completed
                 if self.isTimerComplete {
@@ -103,6 +109,9 @@ final class SessionViewModel {
         elapsedTime = 0
         currentSession = nil
         sessionStartTime = nil
+        
+        // Notify MenuBarService of state change
+        MenuBarService.shared.onTimerUpdate()
     }
     
     func pauseSession() {
@@ -117,6 +126,9 @@ final class SessionViewModel {
         cancelNotification()
         isRunning = false
         // Keep elapsedTime, currentSession, and sessionStartTime for resuming
+        
+        // Notify MenuBarService of state change
+        MenuBarService.shared.onTimerUpdate()
     }
     
     func resumeSession() {
@@ -130,6 +142,9 @@ final class SessionViewModel {
         
         isRunning = true
         
+        // Notify MenuBarService of state change
+        MenuBarService.shared.onTimerUpdate()
+        
         // Reschedule notification with remaining time
         let remainingTime = max(0, targetDuration - elapsedTime)
         if remainingTime > 0 {
@@ -141,6 +156,9 @@ final class SessionViewModel {
             Task { @MainActor in
                 guard let self = self, let startTime = self.sessionStartTime else { return }
                 self.elapsedTime = Date().timeIntervalSince(startTime)
+                
+                // Notify MenuBarService immediately for perfect synchronization
+                MenuBarService.shared.onTimerUpdate()
                 
                 // Check if timer completed
                 if self.isTimerComplete {

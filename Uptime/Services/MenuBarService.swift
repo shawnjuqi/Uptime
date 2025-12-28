@@ -2,11 +2,6 @@ import AppKit
 import SwiftUI
 import Observation
 
-// Nonisolated storage for timer to allow cleanup in deinit
-final class MenuBarTimerStorage: @unchecked Sendable {
-    var timer: Timer?
-}
-
 @MainActor
 @Observable
 final class MenuBarService {
@@ -14,7 +9,6 @@ final class MenuBarService {
     static let shared = MenuBarService()
     
     private var statusItem: NSStatusItem?
-    private let timerStorage = MenuBarTimerStorage()
     weak var sessionViewModel: SessionViewModel?
     
     func setup(sessionViewModel: SessionViewModel) {
@@ -44,9 +38,6 @@ final class MenuBarService {
         menu.addItem(quitItem)
         
         statusItem?.menu = menu
-        
-        // Start timer to update display
-        startUpdateTimer()
     }
     
     func updateMenuBarDisplay() {
@@ -90,13 +81,9 @@ final class MenuBarService {
         }
     }
     
-    private func startUpdateTimer() {
-        timerStorage.timer?.invalidate()
-        timerStorage.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.updateMenuBarDisplay()
-            }
-        }
+    // Called by SessionViewModel when timer updates to ensure perfect sync
+    func onTimerUpdate() {
+        updateMenuBarDisplay()
     }
     
     @objc private func openApp() {
@@ -104,20 +91,10 @@ final class MenuBarService {
     }
     
     func cleanup() {
-        timerStorage.timer?.invalidate()
-        timerStorage.timer = nil
         if let statusItem = statusItem {
             NSStatusBar.system.removeStatusItem(statusItem)
         }
         statusItem = nil
-    }
-    
-    deinit {
-        // Timer.invalidate() is thread-safe, so we can safely call it from deinit
-        // Note: deinit is always nonisolated, so we can access timerStorage.timer
-        // Note: statusItem cleanup requires main actor, so it will be cleaned up
-        // when cleanup() is called explicitly or when the app terminates
-        timerStorage.timer?.invalidate()
     }
 }
 
