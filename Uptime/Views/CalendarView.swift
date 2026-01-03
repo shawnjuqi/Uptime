@@ -44,8 +44,10 @@ struct CalendarHeaderView: View {
                 changeYear(-1)
             } label: {
                 Image(systemName: "chevron.left")
+                    .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
+            .tint(.white)
             
             Spacer()
             
@@ -58,13 +60,17 @@ struct CalendarHeaderView: View {
             
             Toggle("Show Days", isOn: $showDayNumbers)
                 .toggleStyle(.switch)
+                .foregroundStyle(.white)
+                .tint(.white)
             
             Button {
                 changeYear(1)
             } label: {
                 Image(systemName: "chevron.right")
+                    .foregroundStyle(.white)
             }
             .buttonStyle(.plain)
+            .tint(.white)
         }
         .padding(.horizontal)
     }

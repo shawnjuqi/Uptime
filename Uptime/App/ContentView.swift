@@ -31,25 +31,30 @@ struct ContentView: View {
                     Label("Timer", systemImage: "timer")
                         .foregroundStyle(.white)
                 }
+                .tint(.white)
                 
                 NavigationLink(value: NavigationDestination.calendar) {
                     Label("Calendar", systemImage: "calendar")
                         .foregroundStyle(.white)
                 }
+                .tint(.white)
                 
                 NavigationLink(value: NavigationDestination.stats) {
                     Label("Stats", systemImage: "chart.bar")
                         .foregroundStyle(.white)
                 }
+                .tint(.white)
                 
                 if showTestingMode {
                     NavigationLink(value: NavigationDestination.testing) {
                         Label("Testing", systemImage: "wrench.and.screwdriver")
                             .foregroundStyle(.white)
                     }
+                    .tint(.white)
                 }
             }
             .navigationTitle("Uptime")
+            .listStyle(.sidebar)
             .foregroundStyle(.white)
             .toolbar {
                 ToolbarItem(placement: .automatic) {
@@ -82,6 +87,7 @@ struct ContentView: View {
             }
             .background(Color.black)
         }
+        .preferredColorScheme(.dark)
         .onChange(of: sessionViewModel.isRunning) { oldValue, newValue in
             if !newValue {
                 calendarViewModel.refresh()
