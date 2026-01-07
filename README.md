@@ -6,6 +6,8 @@ A macOS work session tracking app with timer functionality, calendar visualizati
 
 <img width="360" height="180" alt="Screenshot 2025-12-28 at 3 13 58 PM" src="https://github.com/user-attachments/assets/3cb2bf64-ce38-4df1-95f9-4cdd069432e7" />
 
+[App Store](https://apps.apple.com/us/app/uptime-tracker/id6757130969?mt=12)
+
 ## Features
 
 - Customizable countdown timer (hours:minutes:seconds)
