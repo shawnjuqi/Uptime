@@ -25,9 +25,12 @@ final class CalendarViewModel {
         
         let sessions = sessionService.getSessions(from: startOfYear, to: endOfYear)
         workDays = Set(sessions.compactMap { $0.date })
-        
-        // Update shared storage for widget
-        SharedStorage.saveWorkDays(Array(workDays))
+
+        // Mirror only the current year to shared storage — the widget shows
+        // recent weeks, so browsing a past year must not overwrite its data
+        if calendar.isDate(targetDate, equalTo: Date(), toGranularity: .year) {
+            SharedStorage.saveWorkDays(Array(workDays))
+        }
     }
     
     func hasWorkCompleted(for date: Date) -> Bool {

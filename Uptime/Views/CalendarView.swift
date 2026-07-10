@@ -78,7 +78,6 @@ struct CalendarHeaderView: View {
     private func changeYear(_ direction: Int) {
         if let newYear = calendar.date(byAdding: .year, value: direction, to: currentYear) {
             currentYear = newYear
-            viewModel.refresh()
         }
     }
 }

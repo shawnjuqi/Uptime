@@ -90,7 +90,6 @@ final class SessionViewModel {
                 // Notify MenuBarService immediately for perfect synchronization
                 MenuBarService.shared.onTimerUpdate()
 
-                // Fire the completion alert once per session, not on every tick
                 if self.isTimerComplete && !self.hasNotifiedCompletion {
                     self.hasNotifiedCompletion = true
                     self.onTimerComplete()
