@@ -31,6 +31,7 @@ final class CalendarViewModel {
         // recent weeks, so browsing a past year must not overwrite its data
         if calendar.isDate(targetDate, equalTo: Date(), toGranularity: .year) {
             SharedStorage.saveWorkDays(Array(workDays))
+            WidgetHelper.reloadWidget()
         }
     }
     

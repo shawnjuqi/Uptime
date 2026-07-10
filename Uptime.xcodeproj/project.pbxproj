@@ -51,11 +51,21 @@
 			);
 			target = C8790AF12EFF29AF00EAC9EC /* UptimeWidgetExtension */;
 		};
+		C8790B092EFF29B000EAC9EC /* Exceptions for "Uptime" folder in "UptimeWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Services/SharedStorage.swift,
+			);
+			target = C8790AF12EFF29AF00EAC9EC /* UptimeWidgetExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C8790A532EFE3C5400EAC9EC /* Uptime */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				C8790B092EFF29B000EAC9EC /* Exceptions for "Uptime" folder in "UptimeWidgetExtension" target */,
+			);
 			path = Uptime;
 			sourceTree = "<group>";
 		};
