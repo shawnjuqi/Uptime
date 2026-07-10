@@ -25,6 +25,7 @@ final class SessionViewModel {
     private let sessionService: SessionService
     private let timerStorage = TimerStorage()
     private var sessionStartTime: Date?
+    private var hasNotifiedCompletion = false
     
     init(viewContext: NSManagedObjectContext) {
         self.sessionService = SessionService(viewContext: viewContext)
@@ -69,23 +70,29 @@ final class SessionViewModel {
         elapsedTime = Date().timeIntervalSince(startTime) // Initialize immediately to prevent skip
         currentSession = sessionService.createSession(startTime: startTime)
         isRunning = true
-        
+        hasNotifiedCompletion = false
+
         // Notify MenuBarService of state change
         MenuBarService.shared.onTimerUpdate()
-        
+
         // Schedule notification
         scheduleNotification()
-        
+
+        startTicking()
+    }
+
+    private func startTicking() {
         timerStorage.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self = self, let startTime = self.sessionStartTime else { return }
                 self.elapsedTime = Date().timeIntervalSince(startTime)
-                
+
                 // Notify MenuBarService immediately for perfect synchronization
                 MenuBarService.shared.onTimerUpdate()
-                
-                // Check if timer completed
-                if self.isTimerComplete {
+
+                // Fire the completion alert once per session, not on every tick
+                if self.isTimerComplete && !self.hasNotifiedCompletion {
+                    self.hasNotifiedCompletion = true
                     self.onTimerComplete()
                 }
             }
@@ -153,22 +160,9 @@ final class SessionViewModel {
         if remainingTime > 0 {
             scheduleNotificationWithTimeInterval(remainingTime)
         }
-        
+
         // Restart the timer
-        timerStorage.timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                guard let self = self, let startTime = self.sessionStartTime else { return }
-                self.elapsedTime = Date().timeIntervalSince(startTime)
-                
-                // Notify MenuBarService immediately for perfect synchronization
-                MenuBarService.shared.onTimerUpdate()
-                
-                // Check if timer completed
-                if self.isTimerComplete {
-                    self.onTimerComplete()
-                }
-            }
-        }
+        startTicking()
     }
     
     private func updateSharedStorage() {
