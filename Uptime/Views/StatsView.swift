@@ -3,16 +3,9 @@ import CoreData
 
 struct StatsView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    @State private var selectedDate = Date()
     @State private var duration: TimeInterval = 0
-    @State private var isShowingDatePicker = false
     
     private let sessionService: SessionService
-    private let calendar = Calendar.current
-    
-    private var isShowingToday: Bool {
-        !isShowingDatePicker || calendar.isDateInToday(selectedDate)
-    }
     
     init(viewContext: NSManagedObjectContext) {
         self.sessionService = SessionService(viewContext: viewContext)
@@ -22,9 +15,8 @@ struct StatsView: View {
         VStack(spacing: 40) {
             Spacer()
             
-            // Large Time Display
             VStack(spacing: 16) {
-                Text(isShowingToday ? "Time Tracked Today" : formatDate(selectedDate))
+                Text("Time Tracked Today")
                     .font(.title2)
                     .foregroundStyle(.white.opacity(0.7))
                 
@@ -32,41 +24,6 @@ struct StatsView: View {
             }
             
             Spacer()
-            
-            // Date Selection Toggle
-            VStack(spacing: 12) {
-                if isShowingDatePicker {
-                    DatePicker(
-                        "Select Date",
-                        selection: $selectedDate,
-                        displayedComponents: .date
-                    )
-                    .datePickerStyle(.compact)
-                    .labelsHidden()
-                    .environment(\.colorScheme, .dark)
-                    .onChange(of: selectedDate) { oldValue, newValue in
-                        loadDuration()
-                    }
-                }
-                
-                Button {
-                    withAnimation {
-                        if isShowingDatePicker {
-                            // Switch back to today
-                            isShowingDatePicker = false
-                            selectedDate = Date()
-                        } else {
-                            // Switch to date picker mode
-                            isShowingDatePicker = true
-                        }
-                        loadDuration()
-                    }
-                } label: {
-                    Text(isShowingDatePicker ? "Show Today" : "Select Another Day")
-                }
-                .buttonStyle(SessionControlButtonStyle(emphasized: true, width: 200))
-            }
-            .padding(.bottom, 40)
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -75,15 +32,12 @@ struct StatsView: View {
             loadDuration()
         }
         .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
-            if isShowingToday {
-                loadDuration()
-            }
+            loadDuration()
         }
     }
     
     private func loadDuration() {
-        let dateToLoad = isShowingDatePicker ? selectedDate : Date()
-        duration = sessionService.getTotalDuration(for: dateToLoad)
+        duration = sessionService.getTotalDuration(for: Date())
     }
     
     private func timeDisplay(_ timeInterval: TimeInterval) -> some View {
@@ -119,12 +73,5 @@ struct StatsView: View {
                 .foregroundStyle(.white)
                 .padding(.horizontal, 4)
         }
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
-        return formatter.string(from: date)
     }
 }
