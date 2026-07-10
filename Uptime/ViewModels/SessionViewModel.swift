@@ -94,10 +94,13 @@ final class SessionViewModel {
     
     func stopSession() {
         // Allow stopping when running OR paused (both have a currentSession)
-        guard let session = currentSession, sessionStartTime != nil else { return }
-        
+        guard let session = currentSession, let startTime = sessionStartTime else { return }
+
         let endTime = Date()
-        sessionService.endSession(session, endTime: endTime)
+        // While running, elapsedTime is up to 1s stale (last tick), so recompute.
+        // While paused, elapsedTime is frozen at the pause point and excludes paused time.
+        let finalElapsed = isRunning ? endTime.timeIntervalSince(startTime) : elapsedTime
+        sessionService.endSession(session, endTime: endTime, elapsed: finalElapsed)
         
         // Update shared storage for widget
         updateSharedStorage()

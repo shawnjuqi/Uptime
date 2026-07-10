@@ -18,9 +18,9 @@ class SessionService {
         return session
     }
     
-    func endSession(_ session: WorkSession, endTime: Date) {
+    func endSession(_ session: WorkSession, endTime: Date, elapsed: TimeInterval) {
         session.endTime = endTime
-        session.duration = endTime.timeIntervalSince(session.startTime ?? Date())
+        session.duration = elapsed
         save()
     }
     
