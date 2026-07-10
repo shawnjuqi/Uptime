@@ -33,13 +33,13 @@ struct TimerDisplayView: View {
         VStack(spacing: 16) {
             if viewModel.isRunning {
                 // Show remaining time counting down when running
-                Text(formatTime(viewModel.remainingTime > 0 ? viewModel.remainingTime : 0))
+                Text(formatTime(viewModel.remainingTime))
                     .font(.system(size: 64, design: .monospaced))
                     .bold()
-                    .foregroundStyle(viewModel.isTimerComplete ? .white : .white)
+                    .foregroundStyle(.white)
             } else if isPaused {
                 // Show paused time when paused
-                Text(formatTime(viewModel.remainingTime > 0 ? viewModel.remainingTime : 0))
+                Text(formatTime(viewModel.remainingTime))
                     .font(.system(size: 64, design: .monospaced))
                     .bold()
                     .foregroundStyle(.white.opacity(0.6))
@@ -148,9 +148,7 @@ struct TimeFieldView: View {
     let maxValue: Int
     let focusedField: FocusState<TimerDisplayView.TimeField?>.Binding
     let field: TimerDisplayView.TimeField
-    
-    @State private var inputBuffer = ""
-    
+
     var body: some View {
         TextField("00", text: $text)
             .font(.system(size: 64, design: .monospaced))
@@ -166,9 +164,8 @@ struct TimeFieldView: View {
             }
             .onChange(of: focusedField.wrappedValue) { oldValue, newValue in
                 if newValue == field {
-                    // When field gains focus, reset to "00" and clear buffer
+                    // When field gains focus, reset to "00"
                     text = "00"
-                    inputBuffer = ""
                 }
             }
     }
@@ -179,15 +176,13 @@ struct TimeFieldView: View {
         
         if digits.isEmpty {
             text = "00"
-            inputBuffer = ""
             return
         }
-        
+
         // Right-to-left input: new digits go to the right, old digits shift left
         // Take last 2 digits (rightmost digits)
         let lastTwo = String(digits.suffix(2))
-        inputBuffer = lastTwo
-        
+
         if let intValue = Int(lastTwo) {
             // Clamp to max value
             let clamped = min(intValue, maxValue)
@@ -210,86 +205,36 @@ struct SessionControlsView: View {
     var body: some View {
         HStack(spacing: 20) {
             if viewModel.isRunning {
-                // Show Pause button when running
                 Button {
                     viewModel.pauseSession()
                 } label: {
                     Label("Pause", systemImage: "pause.fill")
-                        .frame(width: 120, height: 50)
-                        .background(Color.white.opacity(0.1))
-                        .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
                 }
-                .buttonStyle(.plain)
-                
-                // Show Stop button to end session
-                Button {
-                    viewModel.stopSession()
-                } label: {
-                    Label("Stop", systemImage: "stop.fill")
-                        .frame(width: 120, height: 50)
-                        .background(Color.white.opacity(0.1))
-                        .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
+                .buttonStyle(SessionControlButtonStyle())
             } else if isPaused {
-                // Show Resume button when paused
                 Button {
                     viewModel.resumeSession()
                 } label: {
                     Label("Resume", systemImage: "play.fill")
-                        .frame(width: 120, height: 50)
-                        .background(Color.white.opacity(0.1))
-                        .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
                 }
-                .buttonStyle(.plain)
-                
-                // Show Stop button to end session
-                Button {
-                    viewModel.stopSession()
-                } label: {
-                    Label("Stop", systemImage: "stop.fill")
-                        .frame(width: 120, height: 50)
-                        .background(Color.white.opacity(0.1))
-                        .foregroundStyle(.white)
-                        .clipShape(.rect(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
-                }
-                .buttonStyle(.plain)
+                .buttonStyle(SessionControlButtonStyle())
             } else {
-                // Show Start button when not running and not paused
                 Button {
                     viewModel.startSession()
                 } label: {
                     Label("Start", systemImage: "play.fill")
-                        .frame(width: 120, height: 50)
-                        .background(viewModel.isTimerEnabled ? Color.white.opacity(0.15) : Color.white.opacity(0.05))
-                        .foregroundStyle(viewModel.isTimerEnabled ? .white : .white.opacity(0.4))
-                        .clipShape(.rect(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color.white.opacity(viewModel.isTimerEnabled ? 0.3 : 0.1), lineWidth: 1)
-                        )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SessionControlButtonStyle(emphasized: true))
                 .disabled(!viewModel.isTimerEnabled)
+            }
+
+            if viewModel.isRunning || isPaused {
+                Button {
+                    viewModel.stopSession()
+                } label: {
+                    Label("Stop", systemImage: "stop.fill")
+                }
+                .buttonStyle(SessionControlButtonStyle())
             }
         }
     }

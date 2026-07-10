@@ -50,7 +50,7 @@ struct StatsView: View {
                     )
                     .datePickerStyle(.compact)
                     .labelsHidden()
-                    .colorScheme(.dark)
+                    .environment(\.colorScheme, .dark)
                     .onChange(of: selectedDate) { oldValue, newValue in
                         loadDuration()
                     }

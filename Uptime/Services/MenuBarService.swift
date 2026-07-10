@@ -89,12 +89,5 @@ final class MenuBarService {
     @objc private func openApp() {
         NSApp.activate(ignoringOtherApps: true)
     }
-    
-    func cleanup() {
-        if let statusItem = statusItem {
-            NSStatusBar.system.removeStatusItem(statusItem)
-        }
-        statusItem = nil
-    }
 }
 
