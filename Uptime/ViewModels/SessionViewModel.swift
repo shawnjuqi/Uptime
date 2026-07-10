@@ -186,7 +186,7 @@ final class SessionViewModel {
             return
         }
         let sessions = sessionService.getSessions(from: startOfYear, to: endOfYear)
-        let workDays = Set(sessions.compactMap { $0.date })
+        let workDays = Set(sessions.filter { $0.duration > 0 }.compactMap { $0.date })
         SharedStorage.saveWorkDays(Array(workDays))
         
         // Reload widget timelines

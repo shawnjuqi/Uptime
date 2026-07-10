@@ -24,7 +24,8 @@ final class CalendarViewModel {
         }
         
         let sessions = sessionService.getSessions(from: startOfYear, to: endOfYear)
-        workDays = Set(sessions.compactMap { $0.date })
+        // duration == 0 means an orphaned session that never ended (crash/kill)
+        workDays = Set(sessions.filter { $0.duration > 0 }.compactMap { $0.date })
 
         // Mirror only the current year to shared storage — the widget shows
         // recent weeks, so browsing a past year must not overwrite its data

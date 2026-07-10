@@ -6,5 +6,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // This only affects closing windows, not explicit quit (Cmd+Q or Dock quit)
         return false
     }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        SessionViewModel.shared.stopSession()
+    }
 }
 
