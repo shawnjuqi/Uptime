@@ -1,6 +1,5 @@
 import SwiftUI
 import CoreData
-import WidgetKit
 
 enum NavigationDestination: Hashable {
     case timer
@@ -11,84 +10,69 @@ enum NavigationDestination: Hashable {
 
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    
+
     let sessionViewModel: SessionViewModel
     @State private var calendarViewModel = CalendarViewModel(viewContext: PersistenceController.shared.container.viewContext)
-    @State private var selectedDestination: NavigationDestination? = .timer
+    @State private var selectedDestination: NavigationDestination = .timer
     @State private var showStoreLoadError = PersistenceController.shared.storeLoadError != nil
     @AppStorage("showTestingMode") private var showTestingMode = false
-    
+
     let menuBarService: MenuBarService
-    
+
     init(sessionViewModel: SessionViewModel, menuBarService: MenuBarService) {
         self.sessionViewModel = sessionViewModel
         self.menuBarService = menuBarService
     }
 
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selectedDestination) {
-                NavigationLink(value: NavigationDestination.timer) {
-                    Label("Timer", systemImage: "timer")
-                        .foregroundStyle(.white)
-                }
-                .tint(.white)
-                
-                NavigationLink(value: NavigationDestination.calendar) {
-                    Label("Calendar", systemImage: "calendar")
-                        .foregroundStyle(.white)
-                }
-                .tint(.white)
-                
-                NavigationLink(value: NavigationDestination.stats) {
-                    Label("Stats", systemImage: "chart.bar")
-                        .foregroundStyle(.white)
-                }
-                .tint(.white)
-                
-                if showTestingMode {
-                    NavigationLink(value: NavigationDestination.testing) {
-                        Label("Testing", systemImage: "wrench.and.screwdriver")
-                            .foregroundStyle(.white)
-                    }
-                    .tint(.white)
-                }
+        Group {
+            switch selectedDestination {
+            case .timer:
+                SessionView(viewModel: sessionViewModel)
+            case .calendar:
+                CalendarView(viewModel: calendarViewModel)
+            case .stats:
+                StatsView(viewContext: viewContext)
+            case .testing:
+                TestingView(sessionViewModel: sessionViewModel, calendarViewModel: calendarViewModel)
             }
-            .navigationTitle("Uptime")
-            .listStyle(.sidebar)
-            .foregroundStyle(.white)
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        WidgetHelper.reloadWidget()
-                    } label: {
-                        Label("Refresh Widget", systemImage: "arrow.clockwise")
-                            .foregroundStyle(.white)
-                    }
-                    .help("Refresh widget data")
-                }
-            }
-            .toolbarBackground(Color.black, for: .windowToolbar)
-            .scrollContentBackground(.hidden)
-            .background(Color.black)
-        } detail: {
-            Group {
-                switch selectedDestination {
-                case .timer:
-                    SessionView(viewModel: sessionViewModel)
-                case .calendar:
-                    CalendarView(viewModel: calendarViewModel)
-                case .stats:
-                    StatsView(viewContext: viewContext)
-                case .testing:
-                    TestingView(sessionViewModel: sessionViewModel, calendarViewModel: calendarViewModel)
-                case .none:
-                    SessionView(viewModel: sessionViewModel)
-                }
-            }
-            .background(Color.black)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
         .preferredColorScheme(.dark)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Picker("Section", selection: $selectedDestination) {
+                    Text("Timer").tag(NavigationDestination.timer)
+                    Text("Calendar").tag(NavigationDestination.calendar)
+                    Text("Stats").tag(NavigationDestination.stats)
+                    if showTestingMode {
+                        Text("Testing").tag(NavigationDestination.testing)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(.vertical, 6)
+            }
+        }
+        .toolbarBackground(Color.black, for: .windowToolbar)
+        .background {
+            // Invisible buttons keep cmd-1/2/3/4 switching between sections
+            VStack {
+                Button("Timer") { selectedDestination = .timer }
+                    .keyboardShortcut("1", modifiers: .command)
+                Button("Calendar") { selectedDestination = .calendar }
+                    .keyboardShortcut("2", modifiers: .command)
+                Button("Stats") { selectedDestination = .stats }
+                    .keyboardShortcut("3", modifiers: .command)
+                if showTestingMode {
+                    Button("Testing") { selectedDestination = .testing }
+                        .keyboardShortcut("4", modifiers: .command)
+                }
+            }
+            .frame(width: 0, height: 0)
+            .hidden()
+        }
         .onChange(of: sessionViewModel.isRunning) { oldValue, newValue in
             if !newValue {
                 calendarViewModel.refresh()

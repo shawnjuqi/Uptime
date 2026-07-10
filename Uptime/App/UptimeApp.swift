@@ -12,6 +12,7 @@ struct UptimeApp: App {
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .background(Color.black)
         }
+        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandMenu("Test") {
                 Button(showTestingMode ? "Hide Testing Mode" : "Show Testing Mode") {
