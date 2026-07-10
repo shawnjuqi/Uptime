@@ -1,4 +1,5 @@
 import CoreData
+import OSLog
 
 struct PersistenceController {
     static let shared = PersistenceController()
@@ -12,27 +13,36 @@ struct PersistenceController {
 
     let container: NSPersistentContainer
 
+    /// Non-nil when the on-disk store failed to load and the app is running
+    /// on a temporary in-memory store: sessions from this launch won't persist.
+    /// The store file is left on disk untouched so a later launch can recover it.
+    private(set) var storeLoadError: NSError?
+
     init(inMemory: Bool = false) {
         container = NSPersistentContainer(name: "Uptime")
         if inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
+            container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         }
-        container.loadPersistentStores(completionHandler: { (storeDescription, error) in
-            if let error = error as NSError? {
-                // Replace this implementation with code to handle the error appropriately.
-                // fatalError() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
 
-                /*
-                 Typical reasons for an error here include:
-                 * The parent directory does not exist, cannot be created, or disallows writing.
-                 * The persistent store is not accessible, due to permissions or data protection when the device is locked.
-                 * The device is out of space.
-                 * The store could not be migrated to the current model version.
-                 Check the error message to determine what the actual problem was.
-                 */
-                fatalError("Unresolved error \(error), \(error.userInfo)")
+        var loadError: NSError?
+        container.loadPersistentStores { _, error in
+            loadError = error as NSError?
+        }
+
+        if let error = loadError {
+            Logger(subsystem: "Oriented.Uptime", category: "Persistence")
+                .fault("Failed to load persistent store: \(error), \(error.userInfo)")
+            storeLoadError = error
+
+            container.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+            container.loadPersistentStores { _, fallbackError in
+                if let fallbackError {
+                    Logger(subsystem: "Oriented.Uptime", category: "Persistence")
+                        .fault("In-memory fallback store also failed: \(fallbackError)")
+                }
             }
-        })
+        }
+
         container.viewContext.automaticallyMergesChangesFromParent = true
     }
 }

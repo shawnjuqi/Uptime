@@ -15,6 +15,7 @@ struct ContentView: View {
     let sessionViewModel: SessionViewModel
     @State private var calendarViewModel = CalendarViewModel(viewContext: PersistenceController.shared.container.viewContext)
     @State private var selectedDestination: NavigationDestination? = .timer
+    @State private var showStoreLoadError = PersistenceController.shared.storeLoadError != nil
     @AppStorage("showTestingMode") private var showTestingMode = false
     
     let menuBarService: MenuBarService
@@ -102,6 +103,11 @@ struct ContentView: View {
         }
         .onAppear {
             menuBarService.setup(sessionViewModel: sessionViewModel)
+        }
+        .alert("Session History Unavailable", isPresented: $showStoreLoadError) {
+            Button("OK") { }
+        } message: {
+            Text("Your saved session data couldn't be opened. You can keep using Uptime, but sessions from this launch won't be saved. Try restarting the app or freeing up disk space.")
         }
     }
 }
