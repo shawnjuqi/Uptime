@@ -3,8 +3,8 @@ import CoreData
 
 enum NavigationDestination: Hashable {
     case timer
-    case calendar
     case stats
+    case calendar
     case testing
 }
 
@@ -29,10 +29,10 @@ struct ContentView: View {
             switch selectedDestination {
             case .timer:
                 SessionView(viewModel: sessionViewModel)
-            case .calendar:
-                CalendarView(viewModel: calendarViewModel)
             case .stats:
                 StatsView(viewContext: viewContext)
+            case .calendar:
+                CalendarView(viewModel: calendarViewModel)
             case .testing:
                 TestingView(sessionViewModel: sessionViewModel, calendarViewModel: calendarViewModel)
             }
@@ -44,8 +44,8 @@ struct ContentView: View {
             ToolbarItem(placement: .principal) {
                 Picker("Section", selection: $selectedDestination) {
                     Text("Timer").tag(NavigationDestination.timer)
-                    Text("Calendar").tag(NavigationDestination.calendar)
                     Text("Stats").tag(NavigationDestination.stats)
+                    Text("Calendar").tag(NavigationDestination.calendar)
                     if showTestingMode {
                         Text("Testing").tag(NavigationDestination.testing)
                     }
@@ -61,9 +61,9 @@ struct ContentView: View {
             VStack {
                 Button("Timer") { selectedDestination = .timer }
                     .keyboardShortcut("1", modifiers: .command)
-                Button("Calendar") { selectedDestination = .calendar }
-                    .keyboardShortcut("2", modifiers: .command)
                 Button("Stats") { selectedDestination = .stats }
+                    .keyboardShortcut("2", modifiers: .command)
+                Button("Calendar") { selectedDestination = .calendar }
                     .keyboardShortcut("3", modifiers: .command)
                 if showTestingMode {
                     Button("Testing") { selectedDestination = .testing }
