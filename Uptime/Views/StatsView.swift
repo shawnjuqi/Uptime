@@ -5,7 +5,6 @@ struct StatsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @State private var selectedDate = Date()
     @State private var duration: TimeInterval = 0
-    @State private var refreshTimer: Timer?
     @State private var isShowingDatePicker = false
     
     private let sessionService: SessionService
@@ -90,27 +89,10 @@ struct StatsView: View {
         .background(Color.black)
         .onAppear {
             loadDuration()
-            // Refresh current day duration every 5 seconds when showing today
-            refreshTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-                if isShowingToday {
-                    loadDuration()
-                }
-            }
         }
-        .onDisappear {
-            refreshTimer?.invalidate()
-            refreshTimer = nil
-        }
-        .onChange(of: isShowingDatePicker) { oldValue, newValue in
-            if newValue {
-                // When switching to date picker, stop auto-refresh
-                refreshTimer?.invalidate()
-                refreshTimer = nil
-            } else if isShowingToday {
-                // When switching back to today, restart auto-refresh
-                refreshTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { _ in
-                    loadDuration()
-                }
+        .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
+            if isShowingToday {
+                loadDuration()
             }
         }
     }
