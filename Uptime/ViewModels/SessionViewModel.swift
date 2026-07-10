@@ -26,9 +26,63 @@ final class SessionViewModel {
     private let timerStorage = TimerStorage()
     private var sessionStartTime: Date?
     private var hasNotifiedCompletion = false
-    
+    private var pausedForSleep = false
+    private var sleepBeganAt: Date?
+
+    /// Minimum away time before the wake-up banner; shorter sleeps resume silently
+    private let sleepNotificationThreshold: TimeInterval = 5 * 60
+
     init(viewContext: NSManagedObjectContext) {
         self.sessionService = SessionService(viewContext: viewContext)
+        observeSystemSleep()
+    }
+
+    private func observeSystemSleep() {
+        let center = NSWorkspace.shared.notificationCenter
+        center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.systemWillSleep() }
+        }
+        center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.systemDidWake() }
+        }
+    }
+
+    private func systemWillSleep() {
+        guard isRunning else { return }
+        pauseSession()
+        pausedForSleep = true
+        sleepBeganAt = Date()
+    }
+
+    private func systemDidWake() {
+        // Only auto-resume sessions we paused; a manual pause stays paused
+        guard pausedForSleep else { return }
+        pausedForSleep = false
+        resumeSession()
+
+        if let sleepBeganAt {
+            let awayTime = Date().timeIntervalSince(sleepBeganAt)
+            if awayTime >= sleepNotificationThreshold {
+                postSleepResumeNotification(awayFor: awayTime)
+            }
+        }
+        sleepBeganAt = nil
+    }
+
+    private func postSleepResumeNotification(awayFor interval: TimeInterval) {
+        let content = UNMutableNotificationContent()
+        content.title = "Timer Resumed"
+        content.body = "Your Mac was asleep for \(formatAwayTime(interval)). That time wasn't counted."
+
+        let request = UNNotificationRequest(identifier: "sleepResume", content: content, trigger: nil)
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func formatAwayTime(_ interval: TimeInterval) -> String {
+        let totalMinutes = Int(interval) / 60
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+        return hours > 0 ? "\(hours)h \(minutes)m" : "\(minutes)m"
     }
     
     var remainingTime: TimeInterval {
