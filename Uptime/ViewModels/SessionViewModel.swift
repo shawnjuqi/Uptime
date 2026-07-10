@@ -29,7 +29,6 @@ final class SessionViewModel {
     
     init(viewContext: NSManagedObjectContext) {
         self.sessionService = SessionService(viewContext: viewContext)
-        requestNotificationPermission()
     }
     
     var remainingTime: TimeInterval {
@@ -75,7 +74,8 @@ final class SessionViewModel {
         // Notify MenuBarService of state change
         MenuBarService.shared.onTimerUpdate()
 
-        // Schedule notification
+        // Prompts only on the very first session; a no-op once the user has answered
+        requestNotificationPermission()
         scheduleNotification()
 
         startTicking()
