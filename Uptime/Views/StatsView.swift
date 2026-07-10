@@ -24,18 +24,11 @@ struct StatsView: View {
             
             // Large Time Display
             VStack(spacing: 16) {
-                Text(isShowingToday ? "Today" : formatDate(selectedDate))
+                Text(isShowingToday ? "Time Tracked Today" : formatDate(selectedDate))
                     .font(.title2)
                     .foregroundStyle(.white.opacity(0.7))
                 
-                Text(formatTime(duration))
-                    .font(.system(size: 72, design: .monospaced))
-                    .bold()
-                    .foregroundStyle(.white)
-                
-                Text("studied")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.6))
+                timeDisplay(duration)
             }
             
             Spacer()
@@ -70,17 +63,8 @@ struct StatsView: View {
                     }
                 } label: {
                     Text(isShowingDatePicker ? "Show Today" : "Select Another Day")
-                        .font(.headline)
-                        .foregroundStyle(.white)
-                        .frame(width: 200, height: 44)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(.rect(cornerRadius: 8))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color.white.opacity(0.2), lineWidth: 1)
-                        )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(SessionControlButtonStyle(emphasized: true, width: 200))
             }
             .padding(.bottom, 40)
         }
@@ -102,13 +86,39 @@ struct StatsView: View {
         duration = sessionService.getTotalDuration(for: dateToLoad)
     }
     
-    private func formatTime(_ timeInterval: TimeInterval) -> String {
+    private func timeDisplay(_ timeInterval: TimeInterval) -> some View {
         let totalSeconds = Int(timeInterval)
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let seconds = totalSeconds % 60
         
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        return HStack(alignment: .lastTextBaseline, spacing: 4) {
+            timeSegment(String(format: "%02d", hours), label: "hr")
+            colonView
+            timeSegment(String(format: "%02d", minutes), label: "min")
+            colonView
+            timeSegment(String(format: "%02d", seconds), label: "sec")
+        }
+    }
+    
+    private var colonView: some View {
+        Text(":")
+            .font(.system(size: 64, design: .monospaced))
+            .bold()
+            .foregroundStyle(.white)
+    }
+    
+    private func timeSegment(_ digits: String, label: String) -> some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(.white.opacity(0.5))
+            Text(digits)
+                .font(.system(size: 64, design: .monospaced))
+                .bold()
+                .foregroundStyle(.white)
+                .padding(.horizontal, 4)
+        }
     }
     
     private func formatDate(_ date: Date) -> String {

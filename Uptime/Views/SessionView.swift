@@ -118,9 +118,9 @@ struct TimerDisplayView: View {
     private func segmentView(_ segment: TimeSegment, label: String) -> some View {
         let isSelected = selectedSegment == segment
         let isHovered = hoveredSegment == segment
-        return VStack(spacing: 2) {
+        return VStack(spacing: 4) {
             Text(label)
-                .font(.caption)
+                .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(.white.opacity(0.5))
             Text(segmentDigits(for: segment))
                 .font(.system(size: 64, design: .monospaced))
@@ -177,9 +177,9 @@ struct TimerDisplayView: View {
     // Mirrors segmentView's layout so the display doesn't shift between
     // entry, running, and paused states
     private func staticSegmentView(_ digits: String, label: String, color: Color) -> some View {
-        VStack(spacing: 2) {
+        VStack(spacing: 4) {
             Text(label)
-                .font(.caption)
+                .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(.white.opacity(0.3))
             Text(digits)
                 .font(.system(size: 64, design: .monospaced))

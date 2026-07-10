@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SessionControlButtonStyle: ButtonStyle {
     var emphasized = false
+    var width: CGFloat = 120
 
     @Environment(\.isEnabled) private var isEnabled
 
@@ -11,13 +12,13 @@ struct SessionControlButtonStyle: ButtonStyle {
                 // X/Twitter-style primary action: white pill, bold black text
                 configuration.label
                     .font(.system(size: 15, weight: .bold))
-                    .frame(width: 120, height: 50)
+                    .frame(width: width, height: 36)
                     .background(Capsule().fill(Color.white))
                     .foregroundStyle(.black)
                     .opacity(isEnabled ? 1 : 0.4)
             } else {
                 configuration.label
-                    .frame(width: 120, height: 50)
+                    .frame(width: width, height: 36)
                     .background(Color.white.opacity(0.1))
                     .foregroundStyle(Color.white)
                     .clipShape(.rect(cornerRadius: 6))
