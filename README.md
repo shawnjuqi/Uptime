@@ -12,10 +12,11 @@ A macOS work session tracking app with timer functionality, calendar visualizati
 
 - Customizable countdown timer (hours:minutes:seconds)
 - Start, pause, resume, and stop session controls
-- Calendar view with work day visualization (GitHub-style contribution grid)
-- Daily stats tracking and historical data
+- Auto-pauses when your Mac goes to sleep so idle time isn't counted
+- Month and year calendar views shaded by time invested, with per-day detail
+- Stats with today, this week vs. last week, current streak, and a 7-day chart
 - Menu bar integration showing timer status
-- macOS Widget extension for quick activity overview
+- macOS widget with a daily progress ring and contribution grid
 - Persistent storage with CoreData
 
 ## Requirements
@@ -40,13 +41,14 @@ Enable testing mode via the menu bar: `⌘⌥T` or use the Command menu "Test" �
 
 ### Widget
 
-Add the Uptime widget to your macOS notification center:
-1. Open Notification Center
-2. Click "Edit Widgets"
-3. Search for "Uptime"
-4. Choose from Small, Medium, or Large sizes
+Add the Uptime widget to your Mac desktop or Notification Center:
 
-The widget displays a contribution-style calendar grid showing your work activity over time.
+1. Run the **Uptime** scheme in Xcode (not the widget extension scheme alone) and leave the app launched once
+2. Right-click the desktop → **Edit Widgets**, or open Notification Center → **Edit Widgets**
+3. Search for **Uptime**
+4. Choose Small, Medium, or Large
+
+The widget shows today’s progress and a recent-activity grid.
 
 ## Acknowledgments
 
