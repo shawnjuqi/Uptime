@@ -1,58 +1,143 @@
 import SwiftUI
-import CoreData
+
+enum StatsTypography {
+    /// Single type size for all Stats copy (hero clock digits stay larger).
+    static let size: CGFloat = 15
+    static let font: Font = .system(size: size)
+    static let valueFont: Font = .system(size: size, weight: .semibold)
+}
 
 struct StatsView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-    @State private var duration: TimeInterval = 0
+    let viewModel: StatsViewModel
     
-    private let sessionService: SessionService
-    
-    init(viewContext: NSManagedObjectContext) {
-        self.sessionService = SessionService(viewContext: viewContext)
-    }
+    private let contentWidth: CGFloat = 520
     
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
-            
+        ScrollView {
             VStack(spacing: 16) {
-                Text("Time Tracked Today")
-                    .font(.title2)
-                    .foregroundStyle(.white.opacity(0.7))
+                // Hero stays full-width — it's the focal point, not a peer metric
+                StatsCard {
+                    StatsTodayHeroView(duration: viewModel.todayDuration)
+                        .frame(maxWidth: .infinity)
+                }
                 
-                timeDisplay(duration)
+                // Comparable totals: side-by-side so you can scan them against each other
+                HStack(alignment: .top, spacing: 12) {
+                    StatsCard {
+                        StatsStatBlock(
+                            label: "This week",
+                            value: Self.formatCompact(viewModel.thisWeekDuration)
+                        )
+                    }
+                    
+                    StatsCard {
+                        StatsStatBlock(
+                            label: "Last week",
+                            value: Self.formatCompact(viewModel.lastWeekComparableDuration)
+                        )
+                    }
+                }
+                
+                StatsCard {
+                    HStack {
+                        Text("Streak")
+                            .font(StatsTypography.font)
+                            .foregroundStyle(.white.opacity(0.7))
+                        Spacer()
+                        Text(Self.streakText(viewModel.streak))
+                            .font(StatsTypography.valueFont)
+                            .foregroundStyle(.white)
+                    }
+                }
+                
+                StatsCard {
+                    StatsLast7DaysChart(
+                        days: viewModel.last7Days,
+                        averageDuration: viewModel.last7DaysAverage,
+                        formatDuration: Self.formatCompact
+                    )
+                }
             }
-            
-            Spacer()
+            .frame(maxWidth: contentWidth)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 40)
+            .padding(.top, 16)
+            .padding(.bottom, 40)
         }
-        .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
         .onAppear {
-            loadDuration()
+            viewModel.refresh()
         }
         .onReceive(Timer.publish(every: 5, on: .main, in: .common).autoconnect()) { _ in
-            loadDuration()
+            viewModel.refresh()
         }
     }
     
-    private func loadDuration() {
-        duration = sessionService.getTotalDuration(for: Date())
-    }
-    
-    private func timeDisplay(_ timeInterval: TimeInterval) -> some View {
-        let totalSeconds = Int(timeInterval)
+    static func formatCompact(_ timeInterval: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(timeInterval.rounded()))
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
-        let seconds = totalSeconds % 60
         
-        return HStack(alignment: .lastTextBaseline, spacing: 4) {
-            timeSegment(String(format: "%02d", hours), label: "hr")
-            colonView
-            timeSegment(String(format: "%02d", minutes), label: "min")
-            colonView
-            timeSegment(String(format: "%02d", seconds), label: "sec")
+        if hours > 0 && minutes > 0 {
+            return "\(hours)h \(minutes)m"
         }
+        if hours > 0 {
+            return "\(hours)h"
+        }
+        return "\(minutes)m"
+    }
+    
+    static func streakText(_ streak: Int) -> String {
+        if streak <= 0 {
+            return "None"
+        }
+        return streak == 1 ? "1 day" : "\(streak) days"
+    }
+}
+
+/// Label-above-value block for compact side-by-side cards
+struct StatsStatBlock: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(label)
+                .font(StatsTypography.font)
+                .foregroundStyle(.white.opacity(0.7))
+            Text(value)
+                .font(StatsTypography.valueFont)
+                .foregroundStyle(.white)
+                .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct StatsTodayHeroView: View {
+    let duration: TimeInterval
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("Time Tracked Today")
+                .font(StatsTypography.font)
+                .foregroundStyle(.white.opacity(0.7))
+            
+            let totalSeconds = Int(duration)
+            let hours = totalSeconds / 3600
+            let minutes = (totalSeconds % 3600) / 60
+            let seconds = totalSeconds % 60
+            
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                timeSegment(String(format: "%02d", hours), label: "hr")
+                colonView
+                timeSegment(String(format: "%02d", minutes), label: "min")
+                colonView
+                timeSegment(String(format: "%02d", seconds), label: "sec")
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
     
     private var colonView: some View {
@@ -63,10 +148,10 @@ struct StatsView: View {
     }
     
     private func timeSegment(_ digits: String, label: String) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             Text(label)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundStyle(.white.opacity(0.5))
+                .font(StatsTypography.font)
+                .foregroundStyle(.white.opacity(0.7))
             Text(digits)
                 .font(.system(size: 64, design: .monospaced))
                 .bold()

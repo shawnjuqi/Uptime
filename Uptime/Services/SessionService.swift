@@ -43,6 +43,27 @@ class SessionService {
         return sessions.reduce(0) { $0 + $1.duration }
     }
     
+    func getTotalDuration(from startDate: Date, to endDate: Date) -> TimeInterval {
+        let sessions = getSessions(from: startDate, to: endDate)
+        return sessions.reduce(0) { $0 + ($1.duration > 0 ? $1.duration : 0) }
+    }
+    
+    /// Daily totals keyed by start-of-day, inclusive of both bounds.
+    func getDailyDurations(from startDate: Date, to endDate: Date) -> [Date: TimeInterval] {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: startDate)
+        let end = calendar.startOfDay(for: endDate)
+        let sessions = getSessions(from: start, to: end)
+        
+        var daily: [Date: TimeInterval] = [:]
+        for session in sessions where session.duration > 0 {
+            guard let date = session.date else { continue }
+            let day = calendar.startOfDay(for: date)
+            daily[day, default: 0] += session.duration
+        }
+        return daily
+    }
+    
     func getSessions(from startDate: Date, to endDate: Date) -> [WorkSession] {
         let request: NSFetchRequest<WorkSession> = WorkSession.fetchRequest()
         request.predicate = NSPredicate(format: "date >= %@ AND date <= %@", startDate as NSDate, endDate as NSDate)

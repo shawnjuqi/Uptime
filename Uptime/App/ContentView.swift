@@ -1,5 +1,4 @@
 import SwiftUI
-import CoreData
 
 enum NavigationDestination: Hashable {
     case timer
@@ -9,10 +8,9 @@ enum NavigationDestination: Hashable {
 }
 
 struct ContentView: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
     let sessionViewModel: SessionViewModel
     @State private var calendarViewModel = CalendarViewModel(viewContext: PersistenceController.shared.container.viewContext)
+    @State private var statsViewModel = StatsViewModel(viewContext: PersistenceController.shared.container.viewContext)
     @State private var selectedDestination: NavigationDestination = .timer
     @State private var showStoreLoadError = PersistenceController.shared.storeLoadError != nil
     @AppStorage("showTestingMode") private var showTestingMode = false
@@ -30,7 +28,7 @@ struct ContentView: View {
             case .timer:
                 SessionView(viewModel: sessionViewModel)
             case .stats:
-                StatsView(viewContext: viewContext)
+                StatsView(viewModel: statsViewModel)
             case .calendar:
                 CalendarView(viewModel: calendarViewModel)
             case .testing:
@@ -76,6 +74,7 @@ struct ContentView: View {
         .onChange(of: sessionViewModel.isRunning) { oldValue, newValue in
             if !newValue {
                 calendarViewModel.refresh()
+                statsViewModel.refresh()
             }
         }
         .onChange(of: showTestingMode) { oldValue, newValue in
