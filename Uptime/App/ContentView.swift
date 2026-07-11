@@ -35,7 +35,9 @@ struct ContentView: View {
                 TestingView(sessionViewModel: sessionViewModel, calendarViewModel: calendarViewModel)
             }
         }
-        .frame(minWidth: 720, maxWidth: .infinity, minHeight: 620, maxHeight: .infinity)
+        // Minimum floor so the window can't shrink below what Stats / the year
+        // view need; opening size is left to the system default (unchanged).
+        .frame(minWidth: 660, maxWidth: .infinity, minHeight: 560, maxHeight: .infinity)
         .background(Color.black)
         .preferredColorScheme(.dark)
         .toolbar {

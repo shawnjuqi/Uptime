@@ -10,39 +10,42 @@ struct CalendarYearView: View {
 
     private let calendar = Calendar.current
     private let columnCount = 3
-    private let spacing: CGFloat = 20
+    private let spacing: CGFloat = 24
+    private let cellSize: CGFloat = 24
+
+    // Mirrors CalendarMonthGridView's own spacing so a column is exactly one
+    // month wide — the block stays fixed-width and centered instead of the
+    // months spreading apart as the window widens.
+    private var gridSpacing: CGFloat { max(3, cellSize * 0.15) }
+    private var monthWidth: CGFloat { cellSize * 7 + gridSpacing * 6 }
+    private var totalWidth: CGFloat { monthWidth * CGFloat(columnCount) + spacing * CGFloat(columnCount - 1) }
 
     var body: some View {
-        GeometryReader { proxy in
-            let columnWidth = (proxy.size.width - spacing * CGFloat(columnCount - 1) - 40) / CGFloat(columnCount)
-            // 7 day-columns per month, leaving room for the grid's own spacing
-            let cellSize = max(10, min(26, floor(columnWidth / 8)))
-
-            ScrollView {
-                LazyVGrid(
-                    // .top so shorter months don't drop their titles below
-                    // taller months in the same row
-                    columns: Array(repeating: GridItem(.flexible(), spacing: spacing, alignment: .top), count: columnCount),
-                    spacing: spacing
-                ) {
-                    ForEach(months, id: \.self) { month in
-                        CalendarMonthGridView(
-                            monthDate: month,
-                            viewModel: viewModel,
-                            showsMonthTitle: true,
-                            usesShortMonthTitle: true,
-                            showsWeekdayHeaders: false,
-                            showsDayNumbers: false,
-                            cellSize: cellSize,
-                            onSelectDay: onSelectDay,
-                            formatDuration: formatDuration
-                        )
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
+        ScrollView {
+            LazyVGrid(
+                columns: Array(
+                    repeating: GridItem(.fixed(monthWidth), spacing: spacing, alignment: .top),
+                    count: columnCount
+                ),
+                spacing: spacing
+            ) {
+                ForEach(months, id: \.self) { month in
+                    CalendarMonthGridView(
+                        monthDate: month,
+                        viewModel: viewModel,
+                        showsMonthTitle: true,
+                        usesShortMonthTitle: true,
+                        showsWeekdayHeaders: false,
+                        showsDayNumbers: false,
+                        cellSize: cellSize,
+                        onSelectDay: onSelectDay,
+                        formatDuration: formatDuration
+                    )
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 4)
             }
+            .frame(width: totalWidth)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 8)
         }
     }
 
