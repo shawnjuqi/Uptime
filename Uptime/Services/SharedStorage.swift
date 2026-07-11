@@ -8,12 +8,15 @@ struct SharedStorage {
         static let suiteName = "group.Oriented.Uptime"
         static let todayHours = "todayHours"
         static let lastUpdated = "lastUpdated"
-        static let workDays = "workDays"
+        static let dailyDurations = "dailyDurations"
     }
 
     private static let dateFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withFullDate] // YYYY-MM-DD
+        // Local time on both write and read; the default (UTC) shifts each
+        // day key by one in timezones behind UTC, so tiles showed the wrong day.
+        formatter.timeZone = .current
         return formatter
     }()
 
@@ -34,18 +37,35 @@ struct SharedStorage {
         return defaults?.double(forKey: Keys.todayHours) ?? 0
     }
 
-    static func saveWorkDays(_ dates: [Date]) {
-        guard let userDefaults = defaults else { return }
-
-        let dateStrings = dates.map { dateFormatter.string(from: $0) }
-        userDefaults.set(dateStrings, forKey: Keys.workDays)
+    /// When the today total was last written; nil if never. Lets readers
+    /// discard a stale value carried over past midnight.
+    static func getLastUpdated() -> Date? {
+        defaults?.object(forKey: Keys.lastUpdated) as? Date
     }
 
-    static func getWorkDays() -> [Date] {
-        guard let dateStrings = defaults?.stringArray(forKey: Keys.workDays) else {
-            return []
+    /// Per-day tracked seconds for the current year, keyed by day, so the
+    /// widget can shade tiles with the same bands as the in-app calendar.
+    static func saveDailyDurations(_ durations: [Date: TimeInterval]) {
+        guard let userDefaults = defaults else { return }
+
+        var stored: [String: Double] = [:]
+        for (date, duration) in durations {
+            stored[dateFormatter.string(from: date)] = duration
         }
-        return dateStrings.compactMap { dateFormatter.date(from: $0) }
+        userDefaults.set(stored, forKey: Keys.dailyDurations)
+    }
+
+    static func getDailyDurations() -> [Date: TimeInterval] {
+        guard let stored = defaults?.dictionary(forKey: Keys.dailyDurations) as? [String: Double] else {
+            return [:]
+        }
+        var result: [Date: TimeInterval] = [:]
+        for (string, duration) in stored {
+            if let date = dateFormatter.date(from: string) {
+                result[date] = duration
+            }
+        }
+        return result
     }
 
     static func hasWorkToday() -> Bool {
@@ -56,6 +76,6 @@ struct SharedStorage {
         guard let userDefaults = defaults else { return }
         userDefaults.removeObject(forKey: Keys.todayHours)
         userDefaults.removeObject(forKey: Keys.lastUpdated)
-        userDefaults.removeObject(forKey: Keys.workDays)
+        userDefaults.removeObject(forKey: Keys.dailyDurations)
     }
 }

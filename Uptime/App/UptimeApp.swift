@@ -13,6 +13,8 @@ struct UptimeApp: App {
                 .background(Color.black)
         }
         .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 720, height: 620)
+        .windowResizability(.contentMinSize)
         .commands {
             CommandMenu("Test") {
                 Button(showTestingMode ? "Hide Testing Mode" : "Show Testing Mode") {

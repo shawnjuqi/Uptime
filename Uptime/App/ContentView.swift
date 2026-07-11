@@ -35,7 +35,7 @@ struct ContentView: View {
                 TestingView(sessionViewModel: sessionViewModel, calendarViewModel: calendarViewModel)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minWidth: 720, maxWidth: .infinity, minHeight: 620, maxHeight: .infinity)
         .background(Color.black)
         .preferredColorScheme(.dark)
         .toolbar {

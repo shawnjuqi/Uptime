@@ -5,7 +5,8 @@ import Observation
 @MainActor
 @Observable
 final class CalendarViewModel {
-    /// Anchor date for the visible month.
+    var scope: CalendarScope = .month
+    /// Anchor date for the visible month (or year, in year scope).
     var focusedDate = Date()
     /// When set, the day-detail screen is shown.
     var inspectedDate: Date?
@@ -28,14 +29,7 @@ final class CalendarViewModel {
     /// the year: <1h, 1–2h, 2–4h, 4h+. Independent of the busiest day, so
     /// years stay comparable and one outlier can't wash everything out.
     func heatIntensity(for date: Date) -> Double {
-        let duration = duration(for: date)
-        guard duration > 0 else { return 0 }
-        switch duration {
-        case ..<3600: return 0.25
-        case ..<7200: return 0.5
-        case ..<14400: return 0.75
-        default: return 1
-        }
+        HeatShade.intensity(for: duration(for: date))
     }
     
     func hasWorkCompleted(for date: Date) -> Bool {
@@ -69,6 +63,7 @@ final class CalendarViewModel {
 
     func showMonth(_ monthDate: Date) {
         focusedDate = monthDate
+        scope = .month
         inspectedDate = nil
         refresh()
     }
@@ -89,12 +84,9 @@ final class CalendarViewModel {
         let endOfYear = yearInterval.end.addingTimeInterval(-1)
         dailyDurations = sessionService.getDailyDurations(from: startOfYear, to: endOfYear)
 
-        // Widget still needs a boolean work-day set for the current year only
+        // Mirror the current year's per-day durations for the widget's tiles
         if calendar.isDate(date, equalTo: Date(), toGranularity: .year) {
-            let workDays = dailyDurations.compactMap { day, duration in
-                duration > 0 ? day : nil
-            }
-            SharedStorage.saveWorkDays(workDays)
+            SharedStorage.saveDailyDurations(dailyDurations)
             WidgetHelper.reloadWidget()
         }
     }

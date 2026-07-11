@@ -16,75 +16,176 @@ struct UptimeWidget: Widget {
 
 struct UptimeTimelineProvider: TimelineProvider {
     func placeholder(in context: Context) -> UptimeEntry {
-        // Generate sample work days for placeholder
         let calendar = Calendar.current
         let today = Date()
-        var sampleWorkDays = Set<Date>()
-        
-        // Create a realistic pattern of work days
+
+        // Create a realistic pattern of work days with varied durations
+        var sampleDurations: [Date: TimeInterval] = [:]
         for daysAgo in 0..<120 {
             if let date = calendar.date(byAdding: .day, value: -daysAgo, to: today) {
-                // Random-ish pattern based on day number
                 if daysAgo % 3 == 0 || daysAgo % 7 == 1 || daysAgo % 5 == 2 {
-                    sampleWorkDays.insert(calendar.startOfDay(for: date))
+                    let hours = Double((daysAgo % 5) + 1) // 1…5h so bands show
+                    sampleDurations[calendar.startOfDay(for: date)] = hours * 3600
                 }
             }
         }
-        
-        return UptimeEntry(date: today, workDays: sampleWorkDays)
+
+        return UptimeEntry(date: today, todayHours: 3.5, dailyDurations: sampleDurations)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (UptimeEntry) -> Void) {
-        let today = Date()
-        let calendar = Calendar.current
-        // Safely get work days with error handling
-        let workDays = SharedStorage.getWorkDays()
-        let entry = UptimeEntry(
-            date: today,
-            workDays: Set(workDays.map { calendar.startOfDay(for: $0) })
-        )
-        completion(entry)
+        completion(makeEntry(for: Date()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<UptimeEntry>) -> Void) {
         let currentDate = Date()
-        let calendar = Calendar.current
-        // Safely get work days with error handling
-        let workDays = SharedStorage.getWorkDays()
-        let entry = UptimeEntry(
-            date: currentDate,
-            workDays: Set(workDays.map { calendar.startOfDay(for: $0) })
-        )
-        
+        let entry = makeEntry(for: currentDate)
+
         // Refresh every hour with safe date calculation
-        let nextUpdate = calendar.date(byAdding: .hour, value: 1, to: currentDate) ?? currentDate.addingTimeInterval(3600)
+        let nextUpdate = Calendar.current.date(byAdding: .hour, value: 1, to: currentDate) ?? currentDate.addingTimeInterval(3600)
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
+    }
+
+    private func makeEntry(for date: Date) -> UptimeEntry {
+        let calendar = Calendar.current
+        let raw = SharedStorage.getDailyDurations()
+        var normalized: [Date: TimeInterval] = [:]
+        for (day, duration) in raw {
+            normalized[calendar.startOfDay(for: day)] = duration
+        }
+        return UptimeEntry(
+            date: date,
+            todayHours: todayHours(),
+            dailyDurations: normalized
+        )
+    }
+
+    /// Stored today-total, discarded if it was written on an earlier day so
+    /// the ring reads 0 at the start of a fresh day instead of yesterday's.
+    private func todayHours() -> Double {
+        guard let updated = SharedStorage.getLastUpdated(),
+              Calendar.current.isDateInToday(updated) else {
+            return 0
+        }
+        return SharedStorage.getTodayHours()
     }
 }
 
 struct UptimeEntry: TimelineEntry {
     let date: Date
-    let workDays: Set<Date>
+    let todayHours: Double
+    let dailyDurations: [Date: TimeInterval]
 }
 
 struct UptimeWidgetEntryView: View {
     var entry: UptimeTimelineProvider.Entry
     @Environment(\.widgetFamily) var widgetFamily
-    
+
+    /// The ring represents the full 24-hour day, so it only fills completely
+    /// at 24h tracked.
+    private let dailyGoalHours: Double = 24
+
     var body: some View {
+        content
+            .containerBackground(Color.black, for: .widget)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        switch widgetFamily {
+        case .systemSmall:
+            ring
+
+        case .systemMedium:
+            HStack(spacing: 12) {
+                ring
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // 7-column grid fits the near-square right half better than 16
+                grid(.systemSmall)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+
+        case .systemLarge:
+            VStack(spacing: 12) {
+                ring
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                grid(.systemLarge)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+
+        default:
+            grid(widgetFamily)
+        }
+    }
+
+    private var ring: some View {
+        WidgetProgressRing(hours: entry.todayHours, goalHours: dailyGoalHours)
+    }
+
+    private func grid(_ family: WidgetFamily) -> some View {
         ContributionGridView(
             currentDate: entry.date,
-            workDays: entry.workDays,
-            widgetFamily: widgetFamily
+            dailyDurations: entry.dailyDurations,
+            widgetFamily: family
         )
-        .containerBackground(Color.black, for: .widget)
+    }
+}
+
+struct WidgetProgressRing: View {
+    let hours: Double
+    let goalHours: Double
+
+    private var progress: Double {
+        guard goalHours > 0 else { return 0 }
+        return min(1, max(0, hours / goalHours))
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let size = min(geo.size.width, geo.size.height)
+            let lineWidth = max(3, size * 0.07)
+
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(0.15), lineWidth: lineWidth)
+                Circle()
+                    .trim(from: 0, to: progress)
+                    .stroke(Color.white, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+
+                VStack(spacing: size * 0.02) {
+                    Text(hoursText)
+                        .font(.system(size: size * 0.22, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                    Text("Today")
+                        .font(.system(size: size * 0.075, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.55))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
+                }
+                .padding(size * 0.22)
+            }
+            .frame(width: size, height: size)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private var hoursText: String {
+        let totalMinutes = Int((hours * 60).rounded())
+        let h = totalMinutes / 60
+        let m = totalMinutes % 60
+        if h > 0 && m > 0 { return "\(h)h \(m)m" }
+        if h > 0 { return "\(h)h" }
+        return "\(m)m"
     }
 }
 
 struct ContributionGridView: View {
     let currentDate: Date
-    let workDays: Set<Date>
+    let dailyDurations: [Date: TimeInterval]
     let widgetFamily: WidgetFamily
     private let calendar = Calendar.current
     
@@ -146,7 +247,7 @@ struct ContributionGridView: View {
                             // Use optional binding instead of force unwrap
                             if let date = date {
                                 ContributionSquare(
-                                    isWorkDay: workDays.contains(calendar.startOfDay(for: date)),
+                                    duration: dailyDurations[calendar.startOfDay(for: date)] ?? 0,
                                     isToday: calendar.isDateInToday(date),
                                     isFutureDate: date > currentDate,
                                     size: squareSize
@@ -154,7 +255,7 @@ struct ContributionGridView: View {
                             } else {
                                 // Fallback for invalid dates
                                 ContributionSquare(
-                                    isWorkDay: false,
+                                    duration: 0,
                                     isToday: false,
                                     isFutureDate: false,
                                     size: squareSize
@@ -170,74 +271,85 @@ struct ContributionGridView: View {
         .padding(2)
     }
     
-    // Calculate date for a given grid position
-    // Grid fills from right to left, with today being in the rightmost column
+    // Today is the last (bottom-right) square; every cell above or to the
+    // left is one day earlier — a rolling window of the last (columns*7)
+    // days ending today, with no trailing future cells.
     private func dateFor(column: Int, row: Int) -> Date? {
-        // Get today's weekday (1 = Sunday, 7 = Saturday in default calendar)
-        let todayWeekday = calendar.component(.weekday, from: currentDate)
-        
-        // The rightmost column contains today
-        // Each column to the left is one week earlier
-        let weeksAgo = columns - 1 - column
-        
-        // Row represents day of week (0 = Sunday, 6 = Saturday)
-        let targetWeekday = row + 1 // Convert to calendar weekday (1-7)
-        
-        // Calculate days from today
-        let daysDifference = (todayWeekday - targetWeekday) + (weeksAgo * 7)
-        
-        return calendar.date(byAdding: .day, value: -daysDifference, to: currentDate)
+        let offset = (columns - 1 - column) * 7 + (rows - 1 - row)
+        return calendar.date(byAdding: .day, value: -offset, to: currentDate)
     }
 }
 
 struct ContributionSquare: View {
-    let isWorkDay: Bool
+    let duration: TimeInterval
     let isToday: Bool
     let isFutureDate: Bool
     let size: CGFloat
-    
+
     var body: some View {
         RoundedRectangle(cornerRadius: size * 0.2)
             .fill(squareColor)
             .frame(width: size, height: size)
     }
-    
+
     private var squareColor: Color {
-        if isFutureDate {
-            return Color(white: 0.15)
-        } else if isWorkDay {
-            // White for work days (Cursor style)
-            return Color.white
-        } else {
-            // Dark gray for empty days
-            return Color(white: 0.15)
-        }
+        // Same absolute-band shading as the in-app calendar
+        isFutureDate ? HeatShade.empty : HeatShade.color(for: duration)
     }
 }
 
 // Helper to generate sample work days for previews
-private func sampleWorkDays(daysAgoList: [Int]) -> Set<Date> {
+private func sampleDurations(daysAgoList: [Int]) -> [Date: TimeInterval] {
     let calendar = Calendar.current
     let today = Date()
-    return Set(daysAgoList.compactMap { daysAgo in
-        calendar.date(byAdding: .day, value: -daysAgo, to: today).map { calendar.startOfDay(for: $0) }
-    })
+    var result: [Date: TimeInterval] = [:]
+    for daysAgo in daysAgoList {
+        guard let date = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { continue }
+        // Cycle 0.5h → 5h so all bands appear in the preview
+        let hours = Double(daysAgo % 5) + 0.5
+        result[calendar.startOfDay(for: date)] = hours * 3600
+    }
+    return result
 }
 
-#Preview(as: .systemSmall) {
-    UptimeWidget()
-} timeline: {
-    UptimeEntry(
-        date: Date(),
-        workDays: sampleWorkDays(daysAgoList: [0, 2, 3, 5, 7, 8, 10, 12, 14, 15, 17, 19, 21, 23, 25, 28, 30, 32, 35, 38, 40, 42])
-    )
+// macOS doesn't support the widget canvas (#Preview(as:)), so preview the
+// widget's SwiftUI views directly at approximate widget point sizes.
+
+#Preview("Small — ring") {
+    WidgetProgressRing(hours: 3.5, goalHours: 24)
+        .padding(16)
+        .frame(width: 170, height: 170)
+        .background(Color.black)
 }
 
-#Preview(as: .systemMedium) {
-    UptimeWidget()
-} timeline: {
-    UptimeEntry(
-        date: Date(),
-        workDays: sampleWorkDays(daysAgoList: [0, 1, 3, 4, 6, 8, 9, 11, 13, 15, 16, 18, 20, 22, 24, 26, 28, 30, 33, 35, 38, 40, 43, 45, 48, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100])
-    )
+#Preview("Medium — ring + grid") {
+    HStack(spacing: 12) {
+        WidgetProgressRing(hours: 3.5, goalHours: 24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ContributionGridView(
+            currentDate: Date(),
+            dailyDurations: sampleDurations(daysAgoList: [0, 1, 3, 4, 6, 8, 9, 11, 13, 15, 16, 18, 20, 22, 24, 26, 28, 30, 33, 35, 38, 40, 43, 45, 48]),
+            widgetFamily: .systemSmall
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    .padding(12)
+    .frame(width: 345, height: 170)
+    .background(Color.black)
+}
+
+#Preview("Large — ring + grid") {
+    VStack(spacing: 12) {
+        WidgetProgressRing(hours: 5.25, goalHours: 24)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ContributionGridView(
+            currentDate: Date(),
+            dailyDurations: sampleDurations(daysAgoList: [0, 1, 3, 4, 6, 8, 9, 11, 13, 15, 16, 18, 20, 22, 24, 26, 28, 30, 33, 35, 38, 40, 43, 45, 48, 50, 55, 60, 65, 70]),
+            widgetFamily: .systemLarge
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    .padding(16)
+    .frame(width: 345, height: 345)
+    .background(Color.black)
 }

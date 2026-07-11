@@ -26,42 +26,65 @@ struct CalendarView: View {
         VStack(spacing: 16) {
             header
 
-            // Header + weekday row stay pinned near the top; only the tile
-            // rows below grow/shrink as months need 4–6 weeks.
-            HStack {
+            switch viewModel.scope {
+            case .month:
+                // Header + weekday row stay pinned near the top; only the tile
+                // rows below grow/shrink as months need 4–6 weeks.
+                HStack {
+                    Spacer(minLength: 0)
+                    CalendarMonthGridView(
+                        monthDate: viewModel.focusedDate,
+                        viewModel: viewModel,
+                        showsMonthTitle: false,
+                        cellSize: 52,
+                        onSelectDay: viewModel.selectDay,
+                        formatDuration: Self.formatCompact
+                    )
+                    Spacer(minLength: 0)
+                }
                 Spacer(minLength: 0)
-                CalendarMonthGridView(
-                    monthDate: viewModel.focusedDate,
+
+            case .year:
+                CalendarYearView(
+                    year: viewModel.focusedDate,
                     viewModel: viewModel,
-                    showsMonthTitle: false,
-                    cellSize: 52,
                     onSelectDay: viewModel.selectDay,
                     formatDuration: Self.formatCompact
                 )
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-
-            Spacer(minLength: 0)
         }
         .padding(.top, 12)
         .padding(.bottom, 20)
     }
 
     private var header: some View {
-        HStack(spacing: 28) {
-            stepper(
-                title: viewModel.focusedDate.formatted(.dateTime.month(.wide)),
-                minWidth: 120,
-                onPrev: { viewModel.shiftFocus(-1) },
-                onNext: { viewModel.shiftFocus(1) }
-            )
+        VStack(spacing: 12) {
+            HStack(spacing: 28) {
+                if viewModel.scope == .month {
+                    stepper(
+                        title: viewModel.focusedDate.formatted(.dateTime.month(.wide)),
+                        minWidth: 120,
+                        onPrev: { viewModel.shiftFocus(-1) },
+                        onNext: { viewModel.shiftFocus(1) }
+                    )
+                }
 
-            stepper(
-                title: viewModel.focusedDate.formatted(.dateTime.year()),
-                minWidth: 70,
-                onPrev: { viewModel.shiftYear(-1) },
-                onNext: { viewModel.shiftYear(1) }
-            )
+                stepper(
+                    title: viewModel.focusedDate.formatted(.dateTime.year()),
+                    minWidth: 70,
+                    onPrev: { viewModel.shiftYear(-1) },
+                    onNext: { viewModel.shiftYear(1) }
+                )
+            }
+
+            Picker("View", selection: $viewModel.scope) {
+                ForEach(CalendarScope.allCases) { scope in
+                    Text(scope.title).tag(scope)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 180)
         }
         .frame(maxWidth: .infinity)
         .padding(.horizontal, 24)

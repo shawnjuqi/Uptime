@@ -239,10 +239,9 @@ final class SessionViewModel {
               let endOfYear = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: startOfYear) else {
             return
         }
-        let sessions = sessionService.getSessions(from: startOfYear, to: endOfYear)
-        let workDays = Set(sessions.filter { $0.duration > 0 }.compactMap { $0.date })
-        SharedStorage.saveWorkDays(Array(workDays))
-        
+        let durations = sessionService.getDailyDurations(from: startOfYear, to: endOfYear)
+        SharedStorage.saveDailyDurations(durations)
+
         // Reload widget timelines
         WidgetCenter.shared.reloadTimelines(ofKind: "UptimeWidget")
     }

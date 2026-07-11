@@ -65,10 +65,10 @@ struct CalendarDayCell: View {
     
     private var fillColor: Color {
         // Future and empty past days share the same gray tile fill
-        if intensity <= 0 || isFuture {
-            return Color(white: 0.15)
+        if isFuture {
+            return HeatShade.empty
         }
-        return Color.white.opacity(0.25 + intensity * 0.75)
+        return HeatShade.color(for: duration)
     }
     
     private var dayNumberColor: Color {
