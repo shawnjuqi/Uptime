@@ -378,21 +378,21 @@ struct SessionControlsView: View {
                 } label: {
                     Label("Pause", systemImage: "pause.fill")
                 }
-                .buttonStyle(SessionControlButtonStyle())
+                .buttonStyle(PillButtonStyle(width: 120))
             } else if isPaused {
                 Button {
                     viewModel.resumeSession()
                 } label: {
                     Label("Resume", systemImage: "play.fill")
                 }
-                .buttonStyle(SessionControlButtonStyle())
+                .buttonStyle(PillButtonStyle(width: 120))
             } else {
                 Button {
                     viewModel.startSession()
                 } label: {
                     Label("Start", systemImage: "play.fill")
                 }
-                .buttonStyle(SessionControlButtonStyle(emphasized: true))
+                .buttonStyle(PillButtonStyle(width: 120))
                 .disabled(!viewModel.isTimerEnabled)
             }
 
@@ -402,7 +402,7 @@ struct SessionControlsView: View {
                 } label: {
                     Label("Stop", systemImage: "stop.fill")
                 }
-                .buttonStyle(SessionControlButtonStyle())
+                .buttonStyle(PillButtonStyle(width: 120))
             }
         }
     }

@@ -7,7 +7,7 @@ struct StatsDayBarColumn: View {
     
     @State private var isHovered = false
     
-    private let barMaxHeight: CGFloat = 72
+    private let barMaxHeight: CGFloat = 56
     private let barMinHeight: CGFloat = 4
     
     private var isToday: Bool {

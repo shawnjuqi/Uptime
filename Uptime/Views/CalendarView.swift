@@ -1,210 +1,113 @@
 import SwiftUI
 
 struct CalendarView: View {
-    let viewModel: CalendarViewModel
-    @State private var currentYear = Date()
-    @State private var showDayNumbers = false
-    
-    private let calendar = Calendar.current
+    @Bindable var viewModel: CalendarViewModel
     
     var body: some View {
-        VStack(spacing: 12) {
-            CalendarHeaderView(
-                currentYear: $currentYear,
-                showDayNumbers: $showDayNumbers,
-                viewModel: viewModel
-            )
-            
-            YearlyCalendarGridView(
-                currentYear: currentYear,
-                showDayNumbers: showDayNumbers,
-                viewModel: viewModel
-            )
+        Group {
+            if let inspectedDate = viewModel.inspectedDate {
+                CalendarDayDetailView(
+                    date: inspectedDate,
+                    duration: viewModel.duration(for: inspectedDate),
+                    onBack: viewModel.dismissDayDetail
+                )
+            } else {
+                calendarBrowser
+            }
         }
-        .padding()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
         .onAppear {
-            viewModel.refresh(for: currentYear)
-        }
-        .onChange(of: currentYear) { oldValue, newValue in
-            viewModel.refresh(for: newValue)
+            viewModel.refresh()
         }
     }
-}
-
-struct CalendarHeaderView: View {
-    @Binding var currentYear: Date
-    @Binding var showDayNumbers: Bool
-    let viewModel: CalendarViewModel
-    private let calendar = Calendar.current
     
-    var body: some View {
-        HStack {
-            Button {
-                changeYear(-1)
-            } label: {
-                Image(systemName: "chevron.left")
-                    .foregroundStyle(.white)
+    private var calendarBrowser: some View {
+        VStack(spacing: 16) {
+            header
+
+            // Header + weekday row stay pinned near the top; only the tile
+            // rows below grow/shrink as months need 4–6 weeks.
+            HStack {
+                Spacer(minLength: 0)
+                CalendarMonthGridView(
+                    monthDate: viewModel.focusedDate,
+                    viewModel: viewModel,
+                    showsMonthTitle: false,
+                    cellSize: 52,
+                    onSelectDay: viewModel.selectDay,
+                    formatDuration: Self.formatCompact
+                )
+                Spacer(minLength: 0)
             }
-            .buttonStyle(.plain)
-            .tint(.white)
-            
-            Spacer()
-            
-            Text(currentYear, format: .dateTime.year())
-                .font(.title2)
-                .bold()
+
+            Spacer(minLength: 0)
+        }
+        .padding(.top, 12)
+        .padding(.bottom, 20)
+    }
+
+    private var header: some View {
+        HStack(spacing: 28) {
+            stepper(
+                title: viewModel.focusedDate.formatted(.dateTime.month(.wide)),
+                minWidth: 120,
+                onPrev: { viewModel.shiftFocus(-1) },
+                onNext: { viewModel.shiftFocus(1) }
+            )
+
+            stepper(
+                title: viewModel.focusedDate.formatted(.dateTime.year()),
+                minWidth: 70,
+                onPrev: { viewModel.shiftYear(-1) },
+                onNext: { viewModel.shiftYear(1) }
+            )
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 24)
+        .padding(.top, 16)
+    }
+
+    private func stepper(
+        title: String,
+        minWidth: CGFloat,
+        onPrev: @escaping () -> Void,
+        onNext: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 14) {
+            chevron("chevron.left", action: onPrev)
+
+            Text(title)
+                .font(.title2.weight(.semibold))
                 .foregroundStyle(.white)
-            
-            Spacer()
-            
-            Toggle("Show Days", isOn: $showDayNumbers)
-                .toggleStyle(.switch)
+                .frame(minWidth: minWidth)
+                .multilineTextAlignment(.center)
+
+            chevron("chevron.right", action: onNext)
+        }
+    }
+
+    private func chevron(_ systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.white)
-                .tint(.white)
-            
-            Button {
-                changeYear(1)
-            } label: {
-                Image(systemName: "chevron.right")
-                    .foregroundStyle(.white)
-            }
-            .buttonStyle(.plain)
-            .tint(.white)
+                .frame(width: 26, height: 26)
         }
-        .padding(.horizontal)
+        .buttonStyle(.plain)
     }
     
-    private func changeYear(_ direction: Int) {
-        if let newYear = calendar.date(byAdding: .year, value: direction, to: currentYear) {
-            currentYear = newYear
-        }
-    }
-}
-
-struct YearlyCalendarGridView: View {
-    let currentYear: Date
-    let showDayNumbers: Bool
-    let viewModel: CalendarViewModel
-    private let calendar = Calendar.current
-    
-    var body: some View {
-        ScrollView {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 20), count: 3), spacing: 24) {
-                ForEach(monthsInYear, id: \.self) { monthDate in
-                    MonthCalendarView(
-                        monthDate: monthDate,
-                        showDayNumbers: showDayNumbers,
-                        viewModel: viewModel
-                    )
-                }
-            }
-            .padding(.horizontal)
-        }
-    }
-    
-    private var monthsInYear: [Date] {
-        guard let startOfYear = calendar.date(from: calendar.dateComponents([.year], from: currentYear)) else {
-            return []
-        }
+    static func formatCompact(_ timeInterval: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(timeInterval.rounded()))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
         
-        var months: [Date] = []
-        for month in 0..<12 {
-            if let monthDate = calendar.date(byAdding: .month, value: month, to: startOfYear) {
-                months.append(monthDate)
-            }
+        if hours > 0 && minutes > 0 {
+            return "\(hours)h \(minutes)m"
         }
-        return months
-    }
-}
-
-struct MonthCalendarView: View {
-    let monthDate: Date
-    let showDayNumbers: Bool
-    let viewModel: CalendarViewModel
-    private let calendar = Calendar.current
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(monthDate, format: .dateTime.month(.wide))
-                .font(.headline)
-                .frame(height: 20, alignment: .leading)
-                .padding(.horizontal, 4)
-                .foregroundStyle(.white)
-            
-            LazyVGrid(columns: Array(repeating: GridItem(.fixed(14), spacing: 3), count: 7), spacing: 3) {
-                ForEach(daysInMonth, id: \.self) { date in
-                    DaySquare(
-                        date: date,
-                        isWorkDay: viewModel.hasWorkCompleted(for: date),
-                        showDayNumber: showDayNumbers,
-                        isCurrentMonth: true
-                    )
-                }
-            }
+        if hours > 0 {
+            return "\(hours)h"
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    
-    private var daysInMonth: [Date] {
-        guard let firstDay = calendar.date(from: calendar.dateComponents([.year, .month], from: monthDate)) else {
-            return []
-        }
-        
-        var days: [Date] = []
-        
-        // Add all days of the current month only
-        var currentDate = firstDay
-        while calendar.isDate(currentDate, equalTo: monthDate, toGranularity: .month) {
-            days.append(currentDate)
-            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
-            currentDate = nextDate
-        }
-        
-        return days
-    }
-}
-
-struct DaySquare: View {
-    let date: Date
-    let isWorkDay: Bool
-    let showDayNumber: Bool
-    let isCurrentMonth: Bool
-    
-    private let calendar = Calendar.current
-    private let size: CGFloat = 14
-    
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.2)
-                .fill(squareColor)
-                .frame(width: size, height: size)
-            
-            if showDayNumber {
-                Text("\(calendar.component(.day, from: date))")
-                    .font(.system(size: 7))
-                    .foregroundStyle(isWorkDay ? .black : .white.opacity(0.5))
-            }
-            
-            if isToday {
-                RoundedRectangle(cornerRadius: size * 0.2)
-                    .stroke(Color.white.opacity(0.6), lineWidth: 1.5)
-                    .frame(width: size, height: size)
-            }
-        }
-    }
-    
-    private var squareColor: Color {
-        if isWorkDay {
-            // White for work days (Cursor style)
-            return Color.white
-        } else {
-            // Dark gray for empty days
-            return Color(white: 0.15)
-        }
-    }
-    
-    private var isToday: Bool {
-        calendar.isDateInToday(date)
+        return "\(minutes)m"
     }
 }

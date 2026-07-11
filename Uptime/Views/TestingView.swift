@@ -42,10 +42,8 @@ struct TestingView: View {
                     calendarViewModel.refresh()
                 } label: {
                     Label("Create Test Session", systemImage: "plus.circle.fill")
-                        .foregroundStyle(.white)
                 }
-                .buttonStyle(.borderedProminent)
-                .tint(.white.opacity(0.2))
+                .buttonStyle(PillButtonStyle())
             } header: {
                 Text("Test Session Creation")
                     .foregroundStyle(.white)
@@ -56,15 +54,15 @@ struct TestingView: View {
                     showDeleteConfirmation = true
                 } label: {
                     Label("Delete Sessions for Selected Date", systemImage: "trash")
-                        .foregroundStyle(.white)
                 }
-                
+                .buttonStyle(PillButtonStyle())
+
                 Button {
                     showDeleteAllConfirmation = true
                 } label: {
                     Label("Delete All Sessions", systemImage: "trash.fill")
-                        .foregroundStyle(.white)
                 }
+                .buttonStyle(PillButtonStyle())
             } header: {
                 Text("Session Management")
                     .foregroundStyle(.white)
@@ -72,13 +70,14 @@ struct TestingView: View {
             
             Section {
                 Button {
+                    // No calendarViewModel.refresh() here: it reloads the year
+                    // and re-saves work days to shared storage, undoing the reset.
                     SharedStorage.reset()
                     WidgetHelper.reloadWidget()
-                    calendarViewModel.refresh()
                 } label: {
                     Label("Reset Widget Data", systemImage: "trash")
-                        .foregroundStyle(.white)
                 }
+                .buttonStyle(PillButtonStyle())
             } header: {
                 Text("Widget Management")
                     .foregroundStyle(.white)

@@ -5,42 +5,97 @@ import Observation
 @MainActor
 @Observable
 final class CalendarViewModel {
-    var selectedDate = Date()
-    var workDays: Set<Date> = []
+    /// Anchor date for the visible month.
+    var focusedDate = Date()
+    /// When set, the day-detail screen is shown.
+    var inspectedDate: Date?
+    /// Start-of-day → total tracked duration for the loaded year.
+    var dailyDurations: [Date: TimeInterval] = [:]
     
     private let sessionService: SessionService
     private let calendar = Calendar.current
-    
+
     init(viewContext: NSManagedObjectContext) {
         self.sessionService = SessionService(viewContext: viewContext)
-        loadWorkDays()
+        refresh()
     }
-    
-    func loadWorkDays(for year: Date? = nil) {
-        let targetDate = year ?? Date()
-        guard let startOfYear = calendar.date(from: calendar.dateComponents([.year], from: targetDate)),
-              let endOfYear = calendar.date(byAdding: DateComponents(year: 1, day: -1), to: startOfYear) else {
-            return
-        }
-        
-        let sessions = sessionService.getSessions(from: startOfYear, to: endOfYear)
-        // duration == 0 means an orphaned session that never ended (crash/kill)
-        workDays = Set(sessions.filter { $0.duration > 0 }.compactMap { $0.date })
 
-        // Mirror only the current year to shared storage — the widget shows
-        // recent weeks, so browsing a past year must not overwrite its data
-        if calendar.isDate(targetDate, equalTo: Date(), toGranularity: .year) {
-            SharedStorage.saveWorkDays(Array(workDays))
-            WidgetHelper.reloadWidget()
+    func duration(for date: Date) -> TimeInterval {
+        dailyDurations[calendar.startOfDay(for: date)] ?? 0
+    }
+
+    /// Absolute bands so a shade means the same amount of work regardless of
+    /// the year: <1h, 1–2h, 2–4h, 4h+. Independent of the busiest day, so
+    /// years stay comparable and one outlier can't wash everything out.
+    func heatIntensity(for date: Date) -> Double {
+        let duration = duration(for: date)
+        guard duration > 0 else { return 0 }
+        switch duration {
+        case ..<3600: return 0.25
+        case ..<7200: return 0.5
+        case ..<14400: return 0.75
+        default: return 1
         }
     }
     
     func hasWorkCompleted(for date: Date) -> Bool {
-        return workDays.contains(calendar.startOfDay(for: date))
+        duration(for: date) > 0
     }
     
-    func refresh(for year: Date? = nil) {
-        loadWorkDays(for: year)
+    func selectDay(_ date: Date) {
+        let day = calendar.startOfDay(for: date)
+        guard day <= calendar.startOfDay(for: Date()) else { return }
+        inspectedDate = day
+    }
+    
+    func dismissDayDetail() {
+        inspectedDate = nil
+    }
+    
+    func shiftFocus(_ direction: Int) {
+        shift(.month, by: direction)
+    }
+
+    func shiftYear(_ direction: Int) {
+        shift(.year, by: direction)
+    }
+
+    private func shift(_ component: Calendar.Component, by direction: Int) {
+        if let newDate = calendar.date(byAdding: component, value: direction, to: focusedDate) {
+            focusedDate = newDate
+            refresh()
+        }
+    }
+
+    func showMonth(_ monthDate: Date) {
+        focusedDate = monthDate
+        inspectedDate = nil
+        refresh()
+    }
+    
+    func refresh(for date: Date? = nil) {
+        if let date {
+            focusedDate = date
+        }
+        loadDurations(for: focusedDate)
+    }
+    
+    private func loadDurations(for date: Date) {
+        guard let startOfYear = calendar.date(from: calendar.dateComponents([.year], from: date)),
+              let yearInterval = calendar.dateInterval(of: .year, for: date) else {
+            return
+        }
+        
+        let endOfYear = yearInterval.end.addingTimeInterval(-1)
+        dailyDurations = sessionService.getDailyDurations(from: startOfYear, to: endOfYear)
+
+        // Widget still needs a boolean work-day set for the current year only
+        if calendar.isDate(date, equalTo: Date(), toGranularity: .year) {
+            let workDays = dailyDurations.compactMap { day, duration in
+                duration > 0 ? day : nil
+            }
+            SharedStorage.saveWorkDays(workDays)
+            WidgetHelper.reloadWidget()
+        }
     }
 }
-

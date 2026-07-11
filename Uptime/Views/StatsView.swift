@@ -14,7 +14,7 @@ struct StatsView: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
+            VStack(spacing: 12) {
                 // Hero stays full-width — it's the focal point, not a peer metric
                 StatsCard {
                     StatsTodayHeroView(duration: viewModel.todayDuration)
@@ -61,8 +61,8 @@ struct StatsView: View {
             .frame(maxWidth: contentWidth)
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 40)
-            .padding(.top, 16)
-            .padding(.bottom, 40)
+            .padding(.top, 12)
+            .padding(.bottom, 20)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)

@@ -20,7 +20,7 @@ struct StatsLast7DaysChart: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 0) {
                 Text(formatDuration(averageDuration))
                     .font(StatsTypography.valueFont)
@@ -41,7 +41,7 @@ struct StatsLast7DaysChart: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 120, alignment: .bottom)
+            .frame(height: 96, alignment: .bottom)
             .accessibilityElement(children: .contain)
             .accessibilityLabel("Last 7 days")
         }
