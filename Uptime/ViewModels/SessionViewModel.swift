@@ -21,6 +21,9 @@ final class SessionViewModel {
     var currentSession: WorkSession?
     var targetDuration: TimeInterval = 3600 // Default: 1 hour
     var isTimerEnabled = false
+    /// True once the timer reaches its target: counting is frozen at the target
+    /// and the session stays open (showing "Timer Complete!") until the user stops.
+    private(set) var isCompleted = false
     
     private let sessionService: SessionService
     private let timerStorage = TimerStorage()
@@ -124,6 +127,7 @@ final class SessionViewModel {
         currentSession = sessionService.createSession(startTime: startTime)
         isRunning = true
         hasNotifiedCompletion = false
+        isCompleted = false
 
         // Notify MenuBarService of state change
         MenuBarService.shared.onTimerUpdate()
@@ -159,7 +163,10 @@ final class SessionViewModel {
         let endTime = Date()
         // While running, elapsedTime is up to 1s stale (last tick), so recompute.
         // While paused, elapsedTime is frozen at the pause point and excludes paused time.
-        let finalElapsed = isRunning ? endTime.timeIntervalSince(startTime) : elapsedTime
+        let rawElapsed = isRunning ? endTime.timeIntervalSince(startTime) : elapsedTime
+        // The target is a hard ceiling: completion freezes at the target and a
+        // running timer overshoots by up to one tick, so never record past it.
+        let finalElapsed = isTimerEnabled ? min(rawElapsed, targetDuration) : rawElapsed
         sessionService.endSession(session, endTime: endTime, elapsed: finalElapsed)
         
         // Update shared storage for widget
@@ -169,14 +176,15 @@ final class SessionViewModel {
         timerStorage.timer = nil
         cancelNotification()
         isRunning = false
+        isCompleted = false
         elapsedTime = 0
         currentSession = nil
         sessionStartTime = nil
-        
+
         // Notify MenuBarService of state change
         MenuBarService.shared.onTimerUpdate()
     }
-    
+
     func pauseSession() {
         guard isRunning, let startTime = sessionStartTime else { return }
         
@@ -196,6 +204,7 @@ final class SessionViewModel {
     
     func resumeSession() {
         guard !isRunning else { return }
+        guard !isCompleted else { return } // A completed timer stays frozen at the target
         guard currentSession != nil, sessionStartTime != nil else { return }
         guard isTimerEnabled else { return }
         
@@ -247,8 +256,15 @@ final class SessionViewModel {
     }
     
     private func onTimerComplete() {
-        // Timer completed - could add haptic feedback or sound here
         NSSound.beep()
+        // Freeze rather than end the session: the user should still see
+        // "Timer Complete!" and choose when to Stop, and time must never pass the target.
+        timerStorage.timer?.invalidate()
+        timerStorage.timer = nil
+        elapsedTime = targetDuration
+        isRunning = false
+        isCompleted = true
+        MenuBarService.shared.onTimerUpdate()
     }
     
     private func requestNotificationPermission() {

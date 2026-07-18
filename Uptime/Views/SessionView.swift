@@ -372,7 +372,10 @@ struct SessionControlsView: View {
 
     var body: some View {
         HStack(spacing: 20) {
-            if viewModel.isRunning {
+            if viewModel.isCompleted {
+                // Intentionally empty: a finished timer has no primary action, only Stop.
+                EmptyView()
+            } else if viewModel.isRunning {
                 Button {
                     viewModel.pauseSession()
                 } label: {
